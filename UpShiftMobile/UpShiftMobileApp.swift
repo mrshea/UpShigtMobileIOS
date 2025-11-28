@@ -7,26 +7,20 @@
 
 import SwiftUI
 import SwiftData
+import Clerk
 
 @main
-struct UpShiftMobileApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+struct ClerkQuickstartApp: App {
+  @State private var clerk = Clerk.shared
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+  var body: some Scene {
+    WindowGroup {
+      ContentView()
+        .environment(\.clerk, clerk)
+        .task {
+          clerk.configure(publishableKey: "pk_test_cHJpbWFyeS1tb2xseS04OC5jbGVyay5hY2NvdW50cy5kZXYk")
+          try? await clerk.load()
         }
-    }()
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-        .modelContainer(sharedModelContainer)
     }
+  }
 }

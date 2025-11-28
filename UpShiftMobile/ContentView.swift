@@ -1,66 +1,93 @@
-//
-//  ContentView.swift
-//  UpShiftMobile
-//
-//  Created by Michael Shea on 11/26/25.
-//
-
 import SwiftUI
-import SwiftData
+import Clerk
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+  @Environment(\.clerk) private var clerk
+  @State private var authIsPresented = false
+  @State private var selectedTab = 0
 
-    var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-#if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-#endif
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
+  var body: some View {
+    TabView(selection: $selectedTab) {
+      // Home Tab
+      HomeView(clerk: clerk, authIsPresented: $authIsPresented)
+        .tabItem {
+          Label("Home", systemImage: "house.fill")
         }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+        .tag(0)
+      
+      // My Schedule Tab
+      MySchedule(clerk: clerk, authIsPresented: $authIsPresented)
+        .tabItem {
+          Label("Schedule", systemImage: "calendar")
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+        .tag(1)
+      
+      // Explore Tab
+      ExploreView()
+        .tabItem {
+          Label("Explore", systemImage: "magnifyingglass")
         }
+        .tag(2)
+      
+      // Profile Tab
+      ProfileView(clerk: clerk, authIsPresented: $authIsPresented)
+        .tabItem {
+          Label("Profile", systemImage: "person.fill")
+        }
+        .tag(3)
     }
+    .sheet(isPresented: $authIsPresented) {
+      AuthView()
+    }
+  }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+// MARK: - Home View
+struct HomeView: View {
+  var clerk: Clerk
+  @Binding var authIsPresented: Bool
+  
+  var body: some View {
+    NavigationStack {
+      VStack(spacing: 20) {
+        if clerk.user != nil {
+          Text("Welcome, \(clerk.user?.firstName ?? "User")!")
+            .font(.title)
+          
+          UserButton()
+            .frame(width: 36, height: 36)
+        } else {
+          Text("Welcome!")
+            .font(.title)
+          
+          Button("Sign in") {
+            authIsPresented = true
+          }
+          .buttonStyle(.borderedProminent)
+        }
+      }
+      .navigationTitle("Home")
+    }
+  }
+}
+
+// MARK: - Explore View
+struct ExploreView: View {
+  var body: some View {
+    NavigationStack {
+      VStack {
+        Image(systemName: "magnifyingglass.circle.fill")
+          .font(.system(size: 60))
+          .foregroundStyle(.blue)
+        
+        Text("Explore")
+          .font(.title)
+          .padding()
+        
+        Text("Discover new content here")
+          .foregroundStyle(.secondary)
+      }
+      .navigationTitle("Explore")
+    }
+  }
 }
