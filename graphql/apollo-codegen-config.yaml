@@ -1,0 +1,16 @@
+# type: file
+schemaNamespace: UpShiftAPI
+input:
+  schemaSearchPaths:
+    - "**/*.graphqls"
+  operationSearchPaths:
+    - "**/*.graphql"
+output:
+  testMocks:
+    none: {}
+  schemaTypes:
+    path: ./GraphQL
+    moduleType:
+      swiftPackageManager: {}
+  operations:
+    inSchemaModule: {}

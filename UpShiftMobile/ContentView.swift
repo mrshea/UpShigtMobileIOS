@@ -1,5 +1,7 @@
 import SwiftUI
 import Clerk
+import Apollo
+import UpShiftAPI
 
 struct ContentView: View {
   @Environment(\.clerk) private var clerk
@@ -56,6 +58,17 @@ struct HomeView: View {
           
           UserButton()
             .frame(width: 36, height: 36)
+            
+            Button("Query"){
+                Network.shared.apollo.fetch(query: GetMyShiftsQuery()) { result in
+                    switch result {
+                    case .success(let graphQLResult):
+                        print("Success! Result: \(graphQLResult)")
+                    case .failure(let error):
+                        print("Failure! Error: \(error)")
+                    }
+                }
+            }
         } else {
           Text("Welcome!")
             .font(.title)

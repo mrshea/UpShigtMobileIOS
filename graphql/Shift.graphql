@@ -1,0 +1,51 @@
+query GetShifts($startDate: DateTime, $endDate: DateTime) {
+  shifts(startDate: $startDate, endDate: $endDate) {
+    id
+    date
+    startTime
+    endTime
+    peopleNeeded
+    role
+    availableSpots
+    claimedBy {
+      id
+      clerkId
+      employeeName
+      employeeEmail
+    }
+  }
+}
+
+query GetMyShifts {
+  myShifts {
+    id
+    shiftId
+    claimedAt
+    shift {
+      id
+      date
+      startTime
+      endTime
+      role
+    }
+  }
+}
+
+mutation ClaimShift($shiftId: ID!) {
+  claimShift(shiftId: $shiftId) {
+    id
+    shiftId
+    claimedAt
+    shift {
+      id
+      date
+      startTime
+      endTime
+      role
+    }
+  }
+}
+
+mutation UnclaimShift($shiftId: ID!) {
+  unclaimShift(shiftId: $shiftId)
+}
