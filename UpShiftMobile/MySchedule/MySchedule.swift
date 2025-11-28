@@ -37,9 +37,9 @@ struct MySchedule: View {
           .background(Color(uiColor: .systemBackground))
           
           // Week navigation
-          WeekNavigationView(selectedDate: $selectedDate)
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+//          WeekNavigationView(selectedDate: $selectedDate)
+//            .padding(.horizontal)
+//            .padding(.vertical, 8)
           
           Divider()
           
