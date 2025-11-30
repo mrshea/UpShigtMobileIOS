@@ -25,9 +25,9 @@ struct ContentView: View {
         .tag(1)
       
       // Explore Tab
-      ExploreView()
+      AvaliableShifts()
         .tabItem {
-          Label("Explore", systemImage: "magnifyingglass")
+          Label("Claim Shifts", systemImage: "magnifyingglass")
         }
         .tag(2)
       

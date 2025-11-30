@@ -1,5 +1,5 @@
 {
-  "originHash" : "df486d59d6153e199ac03cc10d06f6d6ab42dd85bd018dc039f7cb0245a81f3f",
+  "originHash" : "7d95b7f927424da24f2c0c11c1345e0af18b08ee3c348041b195fc62bb72125c",
   "pins" : [
     {
       "identity" : "apollo-ios",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "31249885da1052872e0ac91a2943f62567c0d96d",
         "version" : "2.2.1"
+      }
+    },
+    {
+      "identity" : "horizoncalendar",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/airbnb/HorizonCalendar.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "470234795d319d0924db5f98ec1f70b03a88f2de"
       }
     },
     {

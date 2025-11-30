@@ -22,7 +22,7 @@ class ShiftViewModel: ObservableObject {
   
   // MARK: - Fetch All Shifts
   
-  func fetchShifts(startDate: Date, endDate: Date) async {
+  func fetchShifts(startDate: Date, endDate: Date, forceRefresh: Bool = false) async {
     isLoading = true
     errorMessage = nil
     
@@ -31,8 +31,9 @@ class ShiftViewModel: ObservableObject {
         startDate: .some(startDate.iso8601),
         endDate: .some(endDate.iso8601)
       )
+
       
-      let result = try await apolloClient.fetch(query: query)
+        let result = try await apolloClient.fetch(query: query, cachePolicy: .fetchIgnoringCacheCompletely)
       
       if let data = result.data {
         // Map GraphQL response to local Shift model
@@ -159,6 +160,15 @@ class ShiftViewModel: ObservableObject {
   func myShiftsForDate(_ date: Date) -> [MyShiftClaim] {
     let calendar = Calendar.current
     return myShifts.filter { claim in
+      calendar.isDate(claim.shift.date, inSameDayAs: date)
+    }
+  }
+  
+  func hasShifts(for date: Date) -> Bool {
+    let calendar = Calendar.current
+    return shifts.contains { shift in
+      calendar.isDate(shift.date, inSameDayAs: date)
+    } || myShifts.contains { claim in
       calendar.isDate(claim.shift.date, inSameDayAs: date)
     }
   }

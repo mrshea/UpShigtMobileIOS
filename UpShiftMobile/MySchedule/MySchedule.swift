@@ -7,6 +7,7 @@
 import SwiftUI
 import Foundation
 import Clerk
+import HorizonCalendar
 
 struct MySchedule: View {
   var clerk: Clerk
@@ -14,6 +15,22 @@ struct MySchedule: View {
   @State private var selectedDate = Date()
   @StateObject private var viewModel = ShiftViewModel()
   @Environment(\.calendar) var calendar
+  
+  // Calendar visible date range (current month - 1 to + 2 months)
+    private var calendarVisibleDateRange: ClosedRange<Date> {
+        let now = Date()
+        
+        // First day of current month at 00:00:00
+        let components = calendar.dateComponents([.year, .month], from: now)
+        let startDate = calendar.date(from: components) ?? now
+        
+        // Last day of current month at 23:59:59
+        let nextMonth = calendar.date(byAdding: .month, value: 1, to: startDate) ?? now
+        let lastDay = calendar.date(byAdding: .day, value: -1, to: nextMonth) ?? now
+        let endDate = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: lastDay) ?? now
+        
+        return startDate...endDate
+    }
   
   var body: some View {
     NavigationStack {
@@ -35,25 +52,35 @@ struct MySchedule: View {
             .padding(.top)
           }
           .background(Color(uiColor: .systemBackground))
-          
-          // Week navigation
-//          WeekNavigationView(selectedDate: $selectedDate)
-//            .padding(.horizontal)
-//            .padding(.vertical, 8)
+        
           
           Divider()
           
           // Week calendar view
           ScrollView {
             VStack(spacing: 16) {
-              // Calendar week view
-              DatePicker(
-                "Selected Date",
-                selection: $selectedDate,
-                displayedComponents: [.date]
+              // HorizonCalendar view
+              CalendarViewRepresentable(
+                calendar: calendar,
+                visibleDateRange: calendarVisibleDateRange,
+                monthsLayout: .vertical(options: VerticalMonthsLayoutOptions()),
+                dataDependency: selectedDate
               )
-              .datePickerStyle(.graphical)
-              .padding()
+              .days { day in
+                let dayDate = calendar.date(from: day.components) ?? Date()
+                DayView(
+                  day: day,
+                  isSelected: calendar.isDate(dayDate, inSameDayAs: selectedDate),
+                  hasShifts: viewModel.hasShifts(for: dayDate)
+                )
+              }
+              .onDaySelection { day in
+                if let dayDate = calendar.date(from: day.components) {
+                  selectedDate = dayDate
+                }
+              }
+              .frame(height: 350)
+              .padding(.horizontal)
               
               // Schedule content for selected date
               VStack(alignment: .leading, spacing: 12) {
@@ -399,5 +426,43 @@ struct MyShiftCard: View {
         .stroke(Color.green.opacity(0.3), lineWidth: 1)
     )
     .cornerRadius(10)
+  }
+}
+
+// MARK: - Custom Calendar Day View
+
+struct DayView: View {
+  let day: DayComponents
+  let isSelected: Bool
+  let hasShifts: Bool
+  @Environment(\.calendar) var calendar
+  
+  private var dayDate: Date {
+    calendar.date(from: day.components) ?? Date()
+  }
+  
+  var body: some View {
+    VStack(spacing: 4) {
+      Text("\(day.day)")
+        .font(.system(size: 18))
+        .fontWeight(isSelected ? .bold : .regular)
+        .foregroundStyle(isSelected ? .white : .primary)
+        .frame(width: 36, height: 36)
+        .background(
+          Circle()
+            .fill(isSelected ? Color.blue : Color.clear)
+        )
+      
+      // Indicator dot for days with shifts
+      if hasShifts {
+        Circle()
+          .fill(isSelected ? .white : .blue)
+          .frame(width: 4, height: 4)
+      } else {
+        Circle()
+          .fill(.clear)
+          .frame(width: 4, height: 4)
+      }
+    }
   }
 }
