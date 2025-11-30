@@ -22,55 +22,61 @@ class ShiftViewModel: ObservableObject {
   
   // MARK: - Fetch All Shifts
   
-  func fetchShifts(startDate: Date, endDate: Date, forceRefresh: Bool = false) async {
-    isLoading = true
-    errorMessage = nil
-    
-    do {
-      let query = GetShiftsQuery(
-        startDate: .some(startDate.iso8601),
-        endDate: .some(endDate.iso8601)
-      )
-
-      
-        let result = try await apolloClient.fetch(query: query, cachePolicy: .fetchIgnoringCacheCompletely)
-      
-      if let data = result.data {
-        // Map GraphQL response to local Shift model
-        self.shifts = data.shifts.compactMap { shift in
-          // Convert DateTime string to Date
-          guard let date = shift.date.toDate() else {
-            print("Failed to parse date: \(shift.date)")
-            return nil
-          }
-          
-          return Shift(
-            id: shift.id,
-            date: date,
-            startTime: shift.startTime,
-            endTime: shift.endTime,
-            peopleNeeded: shift.peopleNeeded,
-            role: shift.role,
-            availableSpots: shift.availableSpots,
-            claimedBy: shift.claimedBy.map { claimedBy in
-              ClaimedEmployee(
-                id: claimedBy.id,
-                clerkId: claimedBy.clerkId,
-                employeeName: claimedBy.employeeName,
-                employeeEmail: claimedBy.employeeEmail
-              )
-            }
-          )
-        }
+    func fetchShifts(startDate: Date, endDate: Date) async {
+        isLoading = true
         errorMessage = nil
-      }
-    } catch {
-      errorMessage = error.localizedDescription
-      print("Error fetching shifts: \(error)")
+        
+        do {
+            let query = GetShiftsQuery(
+                startDate: .some(startDate.iso8601),
+                endDate: .some(endDate.iso8601)
+            )
+            
+            // 👇 UPDATED: Wrapped in a continuation to bridge closure to async/await
+            let result = try await withCheckedThrowingContinuation { continuation in
+                apolloClient.fetch(
+                    query: query,
+                    cachePolicy: .fetchIgnoringCacheData
+                ) { result in
+                    // Resume the async function with the result (success or failure)
+                    continuation.resume(with: result)
+                }
+            }
+            
+            if let data = result.data {
+                self.shifts = data.shifts.compactMap { shift in
+                    guard let date = shift.date.toDate() else {
+                        print("Failed to parse date: \(shift.date)")
+                        return nil
+                    }
+                    
+                    return Shift(
+                        id: shift.id,
+                        date: date,
+                        startTime: shift.startTime,
+                        endTime: shift.endTime,
+                        peopleNeeded: shift.peopleNeeded,
+                        role: shift.role,
+                        availableSpots: shift.availableSpots,
+                        claimedBy: shift.claimedBy.map { claimedBy in
+                            ClaimedEmployee(
+                                id: claimedBy.id,
+                                clerkId: claimedBy.clerkId,
+                                employeeName: claimedBy.employeeName,
+                                employeeEmail: claimedBy.employeeEmail
+                            )
+                        }
+                    )
+                }
+                errorMessage = nil
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            print("Error fetching shifts: \(error)")
+        }
+        
+        isLoading = false
     }
-    
-    isLoading = false
-  }
   
   // MARK: - Fetch My Shifts
   

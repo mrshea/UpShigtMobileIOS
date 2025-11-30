@@ -231,20 +231,13 @@ struct AvaliableShifts: View {
             }
             .padding()
           }
+          .refreshable {
+              await loadShifts()
+          }
         }
       }
       .navigationTitle("Available Shifts")
       .searchable(text: $searchText, prompt: "Search roles")
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button {
-            Task { await loadShifts() }
-          } label: {
-            Image(systemName: "arrow.clockwise")
-          }
-          .disabled(viewModel.isLoading)
-        }
-      }
       .alert("Shift Claimed!", isPresented: $showClaimedAlert) {
         Button("OK", role: .cancel) { }
       } message: {
