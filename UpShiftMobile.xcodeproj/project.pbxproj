@@ -16,6 +16,7 @@
 		5BAA26B62EDA39DF00205CF2 /* apollo-codegen-config.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 5BAA26B52EDA39DF00205CF2 /* apollo-codegen-config.yaml */; };
 		5BAA26B92EDA3B2400205CF2 /* UpShiftAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 5BAA26B82EDA3B2400205CF2 /* UpShiftAPI */; };
 		5BAA26C02EDA669600205CF2 /* HorizonCalendar in Frameworks */ = {isa = PBXBuildFile; productRef = 5BAA26BF2EDA669600205CF2 /* HorizonCalendar */; };
+		5BAA26C32EDCDC5B00205CF2 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = 5BAA26C22EDCDC5B00205CF2 /* SwiftUIIntrospect */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,6 +77,7 @@
 				5BAA26582ED795FF00205CF2 /* Clerk in Frameworks */,
 				5BAA26AA2EDA366800205CF2 /* ApolloWebSocket in Frameworks */,
 				5BAA26C02EDA669600205CF2 /* HorizonCalendar in Frameworks */,
+				5BAA26C32EDCDC5B00205CF2 /* SwiftUIIntrospect in Frameworks */,
 				5BAA26A82EDA366800205CF2 /* Apollo in Frameworks */,
 				5BAA26B92EDA3B2400205CF2 /* UpShiftAPI in Frameworks */,
 			);
@@ -157,6 +159,7 @@
 				5BAA26A92EDA366800205CF2 /* ApolloWebSocket */,
 				5BAA26B82EDA3B2400205CF2 /* UpShiftAPI */,
 				5BAA26BF2EDA669600205CF2 /* HorizonCalendar */,
+				5BAA26C22EDCDC5B00205CF2 /* SwiftUIIntrospect */,
 			);
 			productName = UpShiftMobile;
 			productReference = 5BAA26292ED790A200205CF2 /* UpShiftMobile.app */;
@@ -245,6 +248,7 @@
 				5BAA26A62EDA366800205CF2 /* XCRemoteSwiftPackageReference "apollo-ios" */,
 				5BAA26B72EDA3B2400205CF2 /* XCLocalSwiftPackageReference "UpShiftAPI" */,
 				5BAA26BE2EDA669600205CF2 /* XCRemoteSwiftPackageReference "HorizonCalendar" */,
+				5BAA26C12EDCDC5B00205CF2 /* XCRemoteSwiftPackageReference "swiftui-introspect" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5BAA262A2ED790A200205CF2 /* Products */;
@@ -705,6 +709,14 @@
 				kind = branch;
 			};
 		};
+		5BAA26C12EDCDC5B00205CF2 /* XCRemoteSwiftPackageReference "swiftui-introspect" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/siteline/swiftui-introspect";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 26.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -731,6 +743,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5BAA26BE2EDA669600205CF2 /* XCRemoteSwiftPackageReference "HorizonCalendar" */;
 			productName = HorizonCalendar;
+		};
+		5BAA26C22EDCDC5B00205CF2 /* SwiftUIIntrospect */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5BAA26C12EDCDC5B00205CF2 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
+			productName = SwiftUIIntrospect;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -8,6 +8,7 @@ import SwiftUI
 import Foundation
 import Clerk
 import HorizonCalendar
+import SwiftUIIntrospect
 
 struct MySchedule: View {
   var clerk: Clerk
@@ -31,193 +32,211 @@ struct MySchedule: View {
         
         return startDate...endDate
     }
+    
+    private var calendarHeight: CGFloat {
+      let now = Date()
+      let components = calendar.dateComponents([.year, .month], from: now)
+      guard let startDate = calendar.date(from: components),
+            let range = calendar.range(of: .day, in: .month, for: startDate),
+            let firstWeekday = calendar.dateComponents([.weekday], from: startDate).weekday else {
+        return 400
+      }
+      
+      let daysInMonth = range.count
+      let offset = firstWeekday - calendar.firstWeekday
+      let totalCells = daysInMonth + offset
+      let numberOfWeeks = ceil(Double(totalCells) / 7.0)
+      
+      // Base calculation:
+      // - Month header: ~40
+      // - Days of week header: ~40
+      // - Each week row: ~50 (day circle + indicator dot + spacing)
+      // - Padding: ~40
+      let estimatedHeight = 40 + 40 + (numberOfWeeks * 50)
+      
+      return estimatedHeight
+    }
   
   var body: some View {
     NavigationStack {
-      VStack(spacing: 0) {
-        if clerk.user != nil {
-          // User info header
-          VStack(spacing: 12) {
-            HStack {
-              Text("My Schedule")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-              
-              Spacer()
-              
-              UserButton()
-                .frame(width: 36, height: 36)
-            }
-            .padding(.horizontal)
-            .padding(.top)
-          }
-          .background(Color(uiColor: .systemBackground))
-        
-          
-          Divider()
-          
-          // Week calendar view
-          ScrollView {
-            VStack(spacing: 16) {
-              // HorizonCalendar view
-              CalendarViewRepresentable(
-                calendar: calendar,
-                visibleDateRange: calendarVisibleDateRange,
-                monthsLayout: .vertical(options: VerticalMonthsLayoutOptions()),
-                dataDependency: selectedDate
-              )
-              .days { day in
-                let dayDate = calendar.date(from: day.components) ?? Date()
-                DayView(
-                  day: day,
-                  isSelected: calendar.isDate(dayDate, inSameDayAs: selectedDate),
-                  hasShifts: viewModel.hasShifts(for: dayDate)
-                )
+      if clerk.user != nil {
+        authenticatedView
+      }
+    }
+  }
+
+  // MARK: - Authenticated View
+
+  private var authenticatedView: some View {
+    VStack(spacing: 0) {
+      headerView
+      Divider()
+      scrollContent
+    }
+    .navigationTitle("")
+    .navigationBarTitleDisplayMode(.inline)
+    .task {
+      await loadShifts()
+    }
+  }
+
+  private var headerView: some View {
+    VStack(spacing: 12) {
+      HStack {
+        Text("My Schedule")
+          .font(.largeTitle)
+          .fontWeight(.bold)
+
+        Spacer()
+
+        UserButton()
+          .frame(width: 36, height: 36)
+      }
+      .padding(.horizontal)
+      .padding(.top)
+    }
+    .background(Color(uiColor: .systemBackground))
+  }
+
+  private var scrollContent: some View {
+    ScrollView {
+      VStack(spacing: 16) {
+        calendarView
+        shiftsContentView
+      }
+    }
+  }
+
+  private var calendarView: some View {
+    CalendarViewRepresentable(
+      calendar: calendar,
+      visibleDateRange: calendarVisibleDateRange,
+      monthsLayout: .vertical(options: VerticalMonthsLayoutOptions()),
+      dataDependency: selectedDate
+    )
+    .days { day in
+      dayView(for: day)
+    }
+    .onDaySelection { day in
+      if let dayDate = calendar.date(from: day.components) {
+        selectedDate = dayDate
+      }
+    }
+    .introspect(.scrollView, on: .iOS(.v13, .v14, .v15, .v16, .v17, .v18, .v26)) { scrollView in
+      scrollView.isScrollEnabled = false
+    }
+    .frame(height: calendarHeight)
+    .padding(.horizontal)
+    .padding(.vertical)
+  }
+
+  private func dayView(for day: DayComponents) -> some View {
+    let dayDate = calendar.date(from: day.components) ?? Date()
+    return DayView(
+      day: day,
+      isSelected: calendar.isDate(dayDate, inSameDayAs: selectedDate),
+      hasShifts: viewModel.hasClaimedShiftForDate(for: dayDate)
+    )
+  }
+
+  private var shiftsContentView: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      shiftsHeaderView
+      shiftsBodyView
+    }
+    .padding()
+  }
+
+  private var shiftsHeaderView: some View {
+    HStack {
+      Text(selectedDate, style: .date)
+        .font(.headline)
+
+      Spacer()
+
+      Button(action: { Task { await loadShifts() } }) {
+        Image(systemName: "arrow.clockwise")
+          .foregroundStyle(.blue)
+      }
+      .disabled(viewModel.isLoading)
+    }
+  }
+
+  @ViewBuilder
+  private var shiftsBodyView: some View {
+    if viewModel.isLoading {
+      loadingView
+    } else if let error = viewModel.errorMessage {
+      errorView(error)
+    } else {
+      shiftsListView
+    }
+  }
+
+  private var loadingView: some View {
+    ProgressView()
+      .frame(maxWidth: .infinity)
+      .padding()
+  }
+
+  private func errorView(_ error: String) -> some View {
+    VStack(spacing: 8) {
+      Image(systemName: "exclamationmark.triangle")
+        .font(.system(size: 40))
+        .foregroundStyle(.orange)
+
+      Text("Error loading shifts")
+        .font(.headline)
+
+      Text(error)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+
+      Button("Retry") {
+        Task { await loadShifts() }
+      }
+      .buttonStyle(.bordered)
+    }
+    .padding()
+    .frame(maxWidth: .infinity)
+    .background(Color(uiColor: .secondarySystemBackground))
+    .cornerRadius(10)
+  }
+
+  @ViewBuilder
+  private var shiftsListView: some View {
+    let myShiftsToday = viewModel.myShiftsForDate(selectedDate)
+
+    if !myShiftsToday.isEmpty {
+      VStack(alignment: .leading, spacing: 8) {
+        Text("My Shifts")
+          .font(.subheadline)
+          .fontWeight(.semibold)
+          .foregroundStyle(.secondary)
+
+        ForEach(myShiftsToday) { claim in
+          MyShiftCard(claim: claim) {
+            Task {
+              do {
+                try await viewModel.unclaimShift(shiftId: claim.shiftId)
+                await loadShifts()
+              } catch {
+                viewModel.errorMessage = error.localizedDescription
               }
-              .onDaySelection { day in
-                if let dayDate = calendar.date(from: day.components) {
-                  selectedDate = dayDate
-                }
-              }
-              .frame(height: 350)
-              .padding(.horizontal)
-              
-              // Schedule content for selected date
-              VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                  Text(selectedDate, style: .date)
-                    .font(.headline)
-                  
-                  Spacer()
-                  
-                  Button(action: { Task { await loadShifts() } }) {
-                    Image(systemName: "arrow.clockwise")
-                      .foregroundStyle(.blue)
-                  }
-                  .disabled(viewModel.isLoading)
-                }
-                
-                if viewModel.isLoading {
-                  ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                } else if let error = viewModel.errorMessage {
-                  VStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle")
-                      .font(.system(size: 40))
-                      .foregroundStyle(.orange)
-                    
-                    Text("Error loading shifts")
-                      .font(.headline)
-                    
-                    Text(error)
-                      .font(.caption)
-                      .foregroundStyle(.secondary)
-                      .multilineTextAlignment(.center)
-                    
-                    Button("Retry") {
-                      Task { await loadShifts() }
-                    }
-                    .buttonStyle(.bordered)
-                  }
-                  .padding()
-                  .frame(maxWidth: .infinity)
-                  .background(Color(uiColor: .secondarySystemBackground))
-                  .cornerRadius(10)
-                } else {
-                  // My claimed shifts
-                  let myShiftsToday = viewModel.myShiftsForDate(selectedDate)
-                  
-                  if !myShiftsToday.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                      Text("My Shifts")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                      
-                      ForEach(myShiftsToday) { claim in
-                        MyShiftCard(claim: claim) {
-                          Task {
-                            do {
-                              try await viewModel.unclaimShift(shiftId: claim.shiftId)
-                              await loadShifts()
-                            } catch {
-                              viewModel.errorMessage = error.localizedDescription
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                  
-                  // Available shifts
-                  let availableShifts = viewModel.shiftsForDate(selectedDate)
-                  
-                  if !availableShifts.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                      Text("Available Shifts")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, myShiftsToday.isEmpty ? 0 : 16)
-                      
-                      ForEach(availableShifts) { shift in
-                        ShiftCard(shift: shift) {
-                          Task {
-                            do {
-                              try await viewModel.claimShift(shiftId: shift.id)
-                              await loadShifts()
-                            } catch {
-                              viewModel.errorMessage = error.localizedDescription
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                  
-                  if myShiftsToday.isEmpty && availableShifts.isEmpty {
-                    Text("No shifts scheduled")
-                      .foregroundStyle(.secondary)
-                      .padding()
-                      .frame(maxWidth: .infinity)
-                      .background(Color(uiColor: .secondarySystemBackground))
-                      .cornerRadius(10)
-                  }
-                }
-              }
-              .padding()
             }
-          }
-        } else {
-          // Not signed in state
-          VStack(spacing: 20) {
-            Image(systemName: "calendar")
-              .font(.system(size: 60))
-              .foregroundStyle(.gray)
-            
-            Text("Sign in to view your schedule")
-              .font(.title2)
-            
-            Button("Sign in") {
-              authIsPresented = true
-            }
-            .buttonStyle(.borderedProminent)
           }
         }
       }
-      .navigationTitle("")
-      .navigationBarTitleDisplayMode(.inline)
-      .task {
-        if clerk.user != nil {
-          await loadShifts()
-        }
-      }
-      .onChange(of: selectedDate) {
-        Task {
-          await loadShifts()
-        }
-      }
+    }
+
+    if myShiftsToday.isEmpty {
+      Text("No shifts scheduled")
+        .foregroundStyle(.secondary)
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color(uiColor: .secondarySystemBackground))
+        .cornerRadius(10)
     }
   }
   

@@ -169,6 +169,9 @@ class ShiftViewModel: ObservableObject {
       calendar.isDate(claim.shift.date, inSameDayAs: date)
     }
   }
+    func hasClaimedShiftForDate(for date: Date) -> Bool {
+        return !myShiftsForDate(date).isEmpty
+    }
   
   func hasShifts(for date: Date) -> Bool {
     let calendar = Calendar.current

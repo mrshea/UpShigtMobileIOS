@@ -11,7 +11,7 @@
   "schemaDownloadConfiguration": {
       "downloadMethod": {
           "introspection": {
-              "endpointURL": "http://localhost:3000/api/graphql",
+              "endpointURL": "http://upshiftbackend.vercel.app/api/graphql",
               "httpMethod": {
                   "POST": {}
               },
