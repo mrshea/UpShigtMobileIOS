@@ -9,6 +9,7 @@ import Foundation
 import Combine
 import Apollo
 import UpShiftAPI
+import Clerk
 
 // MARK: - Completed Shift Model
 
@@ -35,10 +36,13 @@ struct CompletedShift: Identifiable, Codable {
 
   func calculateHours() -> Double {
     let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "h:mm a"
+    dateFormatter.dateFormat = "HH:mm" // 24-hour format
 
-    guard let start = dateFormatter.date(from: startTime),
-          let end = dateFormatter.date(from: endTime) else {
+    guard let start = dateFormatter.date(from: startTime) else {
+        return 0
+      }
+            
+    guard let end = dateFormatter.date(from: endTime) else {
       return 0
     }
 
@@ -74,7 +78,38 @@ class TimeAndEarningsViewModel: ObservableObject {
   @Published var errorMessage: String?
 
   private let apolloClient = Network.shared.apollo
-  private let defaultHourlyRate: Double = 15.0 // Default rate, can be configured
+  private let clerk: Clerk
+  private let defaultHourlyRate: Double = 15.0 // Fallback rate if not found in metadata
+
+  init(clerk: Clerk) {
+    self.clerk = clerk
+  }
+
+  // Get hourly rate from Clerk user metadata (public so view can display it)
+  var currentHourlyRate: Double {
+    // Try to get payPerHour from publicMetadata
+    if let publicMetadata = clerk.user?.publicMetadata,
+       let payPerHourJSON = publicMetadata["payPerHour"] {
+
+      // Handle Clerk.JSON type - it can be .number, .string, etc.
+      switch payPerHourJSON {
+          case .number(let value):
+            // Direct number value
+            return value
+
+          case .string(let stringValue):
+            // If it's stored as a string, try to convert
+            if let doubleValue = Double(stringValue) {
+              return doubleValue
+            }
+
+          default:
+            break
+      }
+    }
+    // Return default if not found or conversion failed
+    return defaultHourlyRate
+  }
 
   // MARK: - Fetch Week Data
 
@@ -120,7 +155,7 @@ class TimeAndEarningsViewModel: ObservableObject {
             startTime: myShift.shift.startTime,
             endTime: myShift.shift.endTime,
             role: myShift.shift.role,
-            hourlyRate: defaultHourlyRate
+            hourlyRate: self.currentHourlyRate
           )
         }
 

@@ -11,9 +11,15 @@ import Clerk
 struct TimeAndEarnings: View {
   var clerk: Clerk
   @Binding var authIsPresented: Bool
-  @StateObject private var viewModel = TimeAndEarningsViewModel()
+  @StateObject private var viewModel: TimeAndEarningsViewModel
   @Environment(\.calendar) var calendar
   @State private var selectedWeekStart: Date = Date().startOfWeek
+
+  init(clerk: Clerk, authIsPresented: Binding<Bool>) {
+    self.clerk = clerk
+    self._authIsPresented = authIsPresented
+    self._viewModel = StateObject(wrappedValue: TimeAndEarningsViewModel(clerk: clerk))
+  }
 
   var body: some View {
     NavigationStack {
@@ -66,12 +72,53 @@ struct TimeAndEarnings: View {
   private var scrollContent: some View {
     ScrollView {
       VStack(spacing: 16) {
+        basePayCard
         weekNavigationView
         weekSummaryCard
         shiftsListView
       }
       .padding()
     }
+  }
+
+  // MARK: - Base Pay Card
+
+  private var basePayCard: some View {
+    HStack(spacing: 16) {
+      ZStack {
+        Circle()
+          .fill(
+            LinearGradient(
+              colors: [.green, .mint],
+              startPoint: .topLeading,
+              endPoint: .bottomTrailing
+            )
+          )
+          .frame(width: 56, height: 56)
+
+        Image(systemName: "dollarsign.circle.fill")
+          .font(.system(size: 26))
+          .foregroundStyle(.white)
+      }
+
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Your Base Pay")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+
+        Text("$\(String(format: "%.2f", viewModel.currentHourlyRate))/hour")
+          .font(.system(size: 28, weight: .bold))
+          .foregroundStyle(.primary)
+      }
+
+      Spacer()
+    }
+    .padding()
+    .background(
+      RoundedRectangle(cornerRadius: 16)
+        .fill(Color(uiColor: .secondarySystemBackground))
+        .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
+    )
   }
 
   // MARK: - Week Navigation
