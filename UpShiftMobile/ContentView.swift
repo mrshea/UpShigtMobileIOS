@@ -10,27 +10,28 @@ struct ContentView: View {
 
   var body: some View {
     TabView(selection: $selectedTab) {
-      // Home Tab
-      HomeView(clerk: clerk, authIsPresented: $authIsPresented)
-        .tabItem {
-          Label("Home", systemImage: "house.fill")
-        }
-        .tag(0)
       
       // My Schedule Tab
       MySchedule(clerk: clerk, authIsPresented: $authIsPresented)
         .tabItem {
           Label("Schedule", systemImage: "calendar")
         }
-        .tag(1)
+        .tag(0)
       
       // Explore Tab
       AvaliableShifts()
         .tabItem {
           Label("Claim Shifts", systemImage: "magnifyingglass")
         }
+        .tag(1)
+
+      // Time & Earnings Tab
+      TimeAndEarnings(clerk: clerk, authIsPresented: $authIsPresented)
+        .tabItem {
+          Label("Earnings", systemImage: "dollarsign.circle")
+        }
         .tag(2)
-      
+
       // Profile Tab
       ProfileView(clerk: clerk, authIsPresented: $authIsPresented)
         .tabItem {
