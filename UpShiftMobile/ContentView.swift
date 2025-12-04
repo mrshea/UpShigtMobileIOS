@@ -25,19 +25,26 @@ struct ContentView: View {
         }
         .tag(1)
 
+      // Today Tab
+      TodayView(clerk: clerk, authIsPresented: $authIsPresented)
+        .tabItem {
+          Label("Today", systemImage: "checkmark.circle")
+        }
+        .tag(2)
+
       // Time & Earnings Tab
       TimeAndEarnings(clerk: clerk, authIsPresented: $authIsPresented)
         .tabItem {
           Label("Earnings", systemImage: "dollarsign.circle")
         }
-        .tag(2)
+        .tag(3)
 
       // Profile Tab
       ProfileView(clerk: clerk, authIsPresented: $authIsPresented)
         .tabItem {
           Label("Profile", systemImage: "person.fill")
         }
-        .tag(3)
+        .tag(4)
     }
     .sheet(isPresented: $authIsPresented) {
       AuthView()

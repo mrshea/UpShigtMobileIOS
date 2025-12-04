@@ -20,10 +20,12 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
 
   @_spi(Execution) public static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
     switch typename {
+    case "ClockStatus": return UpShiftAPI.Objects.ClockStatus
     case "Mutation": return UpShiftAPI.Objects.Mutation
     case "Query": return UpShiftAPI.Objects.Query
     case "Shift": return UpShiftAPI.Objects.Shift
     case "ShiftClaim": return UpShiftAPI.Objects.ShiftClaim
+    case "TimeEntry": return UpShiftAPI.Objects.TimeEntry
     default: return nil
     }
   }

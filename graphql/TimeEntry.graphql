@@ -1,0 +1,95 @@
+query GetClockStatus {
+  clockStatus {
+    isClockedIn
+    activeEntry {
+      id
+      orgId
+      shiftId
+      clerkId
+      clockInTime
+      clockOutTime
+      clockInLatitude
+      clockInLongitude
+      clockOutLatitude
+      clockOutLongitude
+      hoursWorked
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+query GetMyTimeEntries($startDate: DateTime, $endDate: DateTime) {
+  myTimeEntries(startDate: $startDate, endDate: $endDate) {
+    id
+    orgId
+    shiftId
+    shift {
+      id
+      date
+      startTime
+      endTime
+      role
+    }
+    clerkId
+    clockInTime
+    clockOutTime
+    clockInLatitude
+    clockInLongitude
+    clockOutLatitude
+    clockOutLongitude
+    hoursWorked
+    createdAt
+    updatedAt
+  }
+}
+
+mutation ClockIn($shiftId: ID, $latitude: Float, $longitude: Float) {
+  clockIn(shiftId: $shiftId, latitude: $latitude, longitude: $longitude) {
+    id
+    orgId
+    shiftId
+    shift {
+      id
+      date
+      startTime
+      endTime
+      role
+    }
+    clerkId
+    clockInTime
+    clockOutTime
+    clockInLatitude
+    clockInLongitude
+    clockOutLatitude
+    clockOutLongitude
+    hoursWorked
+    createdAt
+    updatedAt
+  }
+}
+
+mutation ClockOut($latitude: Float, $longitude: Float) {
+  clockOut(latitude: $latitude, longitude: $longitude) {
+    id
+    orgId
+    shiftId
+    shift {
+      id
+      date
+      startTime
+      endTime
+      role
+    }
+    clerkId
+    clockInTime
+    clockOutTime
+    clockInLatitude
+    clockInLongitude
+    clockOutLatitude
+    clockOutLongitude
+    hoursWorked
+    createdAt
+    updatedAt
+  }
+}

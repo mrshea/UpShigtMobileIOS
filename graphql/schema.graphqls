@@ -94,6 +94,30 @@ type TimeOffRequest {
   employeeEmail: String
 }
 
+type TimeEntry {
+  id: ID!
+  orgId: String!
+  shiftId: String
+  shift: Shift
+  clerkId: String!
+  clockInTime: DateTime!
+  clockOutTime: DateTime
+  clockInLatitude: Float
+  clockInLongitude: Float
+  clockOutLatitude: Float
+  clockOutLongitude: Float
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  hoursWorked: Float
+  employeeName: String
+  employeeEmail: String
+}
+
+type ClockStatus {
+  isClockedIn: Boolean!
+  activeEntry: TimeEntry
+}
+
 type Query {
   me: User
   shifts(startDate: DateTime, endDate: DateTime): [Shift!]!
@@ -101,6 +125,9 @@ type Query {
   myShifts: [ShiftClaim!]!
   timeOffRequests(isAdmin: Boolean!): [TimeOffRequest!]!
   myTimeOffRequests: [TimeOffRequest!]!
+  timeEntries(isAdmin: Boolean!, employeeId: String, startDate: DateTime, endDate: DateTime): [TimeEntry!]!
+  myTimeEntries(startDate: DateTime, endDate: DateTime): [TimeEntry!]!
+  clockStatus: ClockStatus!
 }
 
 type Mutation {
@@ -111,4 +138,6 @@ type Mutation {
   createTimeOffRequest(startDate: DateTime!, endDate: DateTime!, reason: String!): TimeOffRequest!
   updateTimeOffRequestStatus(requestId: ID!, status: String!): TimeOffRequest!
   deleteTimeOffRequest(id: ID!): Boolean!
+  clockIn(shiftId: ID, latitude: Float, longitude: Float): TimeEntry!
+  clockOut(latitude: Float, longitude: Float): TimeEntry!
 }
