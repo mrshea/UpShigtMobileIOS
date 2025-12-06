@@ -12,7 +12,6 @@ import SwiftUIIntrospect
 
 struct MySchedule: View {
   var clerk: Clerk
-  @Binding var authIsPresented: Bool
   @State private var selectedDate = Date()
   @StateObject private var viewModel = ShiftViewModel()
   @Environment(\.calendar) var calendar

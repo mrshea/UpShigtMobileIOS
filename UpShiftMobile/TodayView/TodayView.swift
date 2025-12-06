@@ -12,22 +12,16 @@ import Combine
 
 struct TodayView: View {
   var clerk: Clerk
-  @Binding var authIsPresented: Bool
   @StateObject private var viewModel: TodayViewModel
 
-  init(clerk: Clerk, authIsPresented: Binding<Bool>) {
+  init(clerk: Clerk) {
     self.clerk = clerk
-    self._authIsPresented = authIsPresented
     self._viewModel = StateObject(wrappedValue: TodayViewModel())
   }
 
   var body: some View {
     NavigationStack {
-      if clerk.user != nil {
         authenticatedView
-      } else {
-        unauthenticatedView
-      }
     }
     .alert("Location Permission Required", isPresented: $viewModel.showLocationPermissionAlert) {
       Button("Cancel", role: .cancel) {}
@@ -246,20 +240,6 @@ struct TodayView: View {
           }
         )
       }
-    }
-  }
-
-  // MARK: - Unauthenticated View
-
-  private var unauthenticatedView: some View {
-    VStack(spacing: 20) {
-      Text("Sign in to view today's shifts")
-        .font(.title2)
-
-      Button("Sign In") {
-        authIsPresented = true
-      }
-      .buttonStyle(.borderedProminent)
     }
   }
 }

@@ -10,24 +10,18 @@ import Clerk
 
 struct TimeAndEarnings: View {
   var clerk: Clerk
-  @Binding var authIsPresented: Bool
   @StateObject private var viewModel: TimeAndEarningsViewModel
   @Environment(\.calendar) var calendar
   @State private var selectedWeekStart: Date = Date().startOfWeek
 
-  init(clerk: Clerk, authIsPresented: Binding<Bool>) {
+  init(clerk: Clerk) {
     self.clerk = clerk
-    self._authIsPresented = authIsPresented
     self._viewModel = StateObject(wrappedValue: TimeAndEarningsViewModel(clerk: clerk))
   }
 
   var body: some View {
     NavigationStack {
-      if clerk.user != nil {
         authenticatedView
-      } else {
-        unauthenticatedView
-      }
     }
   }
 
@@ -338,20 +332,6 @@ struct TimeAndEarnings: View {
     .padding(.vertical, 40)
     .background(Color(uiColor: .secondarySystemBackground))
     .cornerRadius(12)
-  }
-
-  // MARK: - Unauthenticated View
-
-  private var unauthenticatedView: some View {
-    VStack(spacing: 20) {
-      Text("Sign in to view your earnings")
-        .font(.title2)
-
-      Button("Sign In") {
-        authIsPresented = true
-      }
-      .buttonStyle(.borderedProminent)
-    }
   }
 
   // MARK: - Helper Methods

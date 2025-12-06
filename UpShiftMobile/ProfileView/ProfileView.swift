@@ -12,15 +12,10 @@ import Clerk
 // MARK: - Profile View
 struct ProfileView: View {
   var clerk: Clerk
-  @Binding var authIsPresented: Bool
 
   var body: some View {
     NavigationStack {
-      if clerk.user != nil {
         authenticatedView
-      } else {
-        unauthenticatedView
-      }
     }
   }
 
@@ -260,56 +255,6 @@ struct ProfileView: View {
         .padding(.top, 8)
     }
     .padding(.bottom, 32)
-  }
-
-  // MARK: - Unauthenticated View
-  private var unauthenticatedView: some View {
-    VStack(spacing: 32) {
-      Spacer()
-
-      VStack(spacing: 20) {
-        ZStack {
-          Circle()
-            .fill(Color(.systemGray5))
-            .frame(width: 120, height: 120)
-
-          Image(systemName: "person.circle")
-            .font(.system(size: 80))
-            .foregroundStyle(.gray)
-        }
-
-        VStack(spacing: 8) {
-          Text("Not signed in")
-            .font(.title2.bold())
-
-          Text("Sign in to access your profile and manage your shifts")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 32)
-        }
-      }
-
-      Button {
-        authIsPresented = true
-      } label: {
-        HStack {
-          Image(systemName: "person.fill")
-          Text("Sign In")
-        }
-        .font(.headline)
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color.blue)
-        .foregroundStyle(.white)
-        .cornerRadius(12)
-      }
-      .padding(.horizontal, 32)
-
-      Spacer()
-      Spacer()
-    }
-    .navigationTitle("Profile")
   }
 
   // MARK: - Computed Properties
