@@ -113,67 +113,37 @@ class TimeAndEarningsViewModel: ObservableObject {
 
   // MARK: - Fetch Week Data
 
-  func fetchWeekData(startDate: Date, endDate: Date) async {
-    isLoading = true
+  func fetchWeekData(startDate: Date, endDate: Date, useCache: Bool = true) async {
+    // Only show loading on first load (when cache is empty)
+    if weekShifts.isEmpty {
+      isLoading = true
+    }
     errorMessage = nil
 
     do {
       // Fetch my shifts from the API
       let query = GetMyShiftsQuery()
 
-      let result = try await apolloClient.fetch(
-        query: query,
-        cachePolicy: .networkOnly
-      )
-
-      if let data = result.data {
-        // Filter shifts that fall within the week and are in the past
-        let now = Date()
-        let calendar = Calendar.current
-
-        let completedShifts = data.myShifts.compactMap { myShift -> CompletedShift? in
-          guard let shiftDate = myShift.shift.date.toDate(),
-                let startTime = myShift.shift.startTime.toDate(),
-                let endTime = myShift.shift.endTime.toDate() else {
-            print("Failed to parse dates for shift: \(myShift.id)")
-            return nil
+      if useCache {
+        // Use cache and network: returns cache first, then network
+        for try await result in try apolloClient.fetch(
+          query: query,
+          cachePolicy: .cacheAndNetwork
+        ) {
+          if let data = result.data {
+            processShiftsData(data: data, startDate: startDate, endDate: endDate)
           }
-
-          // Only include shifts that:
-          // 1. Are within the selected week range
-          // 2. Are in the past (completed)
-          guard shiftDate >= startDate,
-                shiftDate <= endDate,
-                shiftDate < now else {
-            return nil
-          }
-          
-          // Get department name, fallback to "Unknown"
-          let departmentName = myShift.shift.department?.name ?? "Unknown"
-          
-          // Format times to HH:mm
-          let timeFormatter = DateFormatter()
-          timeFormatter.dateFormat = "HH:mm"
-          let startTimeString = timeFormatter.string(from: startTime)
-          let endTimeString = timeFormatter.string(from: endTime)
-
-          return CompletedShift(
-            id: myShift.id,
-            date: shiftDate,
-            startTime: startTimeString,
-            endTime: endTimeString,
-            role: departmentName,
-            hourlyRate: self.currentHourlyRate
-          )
         }
-
-        // Sort by date (most recent first)
-        self.weekShifts = completedShifts.sorted { $0.date > $1.date }
-
-        // Calculate week summary
-        calculateWeekSummary()
-
-        errorMessage = nil
+      } else {
+        // Network only: skip cache
+        let result = try await apolloClient.fetch(
+          query: query,
+          cachePolicy: .networkOnly
+        )
+        
+        if let data = result.data {
+          processShiftsData(data: data, startDate: startDate, endDate: endDate)
+        }
       }
     } catch {
       errorMessage = error.localizedDescription
@@ -183,6 +153,57 @@ class TimeAndEarningsViewModel: ObservableObject {
     }
 
     isLoading = false
+  }
+  
+  // MARK: - Process Shifts Data
+  
+  private func processShiftsData(data: GetMyShiftsQuery.Data, startDate: Date, endDate: Date) {
+    // Filter shifts that fall within the week and are in the past
+    let now = Date()
+
+    let completedShifts = data.myShifts.compactMap { myShift -> CompletedShift? in
+      guard let shiftDate = myShift.shift.date.toDate(),
+            let startTime = myShift.shift.startTime.toDate(),
+            let endTime = myShift.shift.endTime.toDate() else {
+        print("Failed to parse dates for shift: \(myShift.id)")
+        return nil
+      }
+
+      // Only include shifts that:
+      // 1. Are within the selected week range
+      // 2. Are in the past (completed)
+      guard shiftDate >= startDate,
+            shiftDate <= endDate,
+            shiftDate < now else {
+        return nil
+      }
+      
+      // Get department name, fallback to "Unknown"
+      let departmentName = myShift.shift.department?.name ?? "Unknown"
+      
+      // Format times to HH:mm
+      let timeFormatter = DateFormatter()
+      timeFormatter.dateFormat = "HH:mm"
+      let startTimeString = timeFormatter.string(from: startTime)
+      let endTimeString = timeFormatter.string(from: endTime)
+
+      return CompletedShift(
+        id: myShift.id,
+        date: shiftDate,
+        startTime: startTimeString,
+        endTime: endTimeString,
+        role: departmentName,
+        hourlyRate: self.currentHourlyRate
+      )
+    }
+
+    // Sort by date (most recent first)
+    self.weekShifts = completedShifts.sorted { $0.date > $1.date }
+
+    // Calculate week summary
+    calculateWeekSummary()
+
+    errorMessage = nil
   }
 
   // MARK: - Calculate Summary
@@ -201,5 +222,50 @@ class TimeAndEarningsViewModel: ObservableObject {
       projectedPay: totalPay,
       shiftsCount: weekShifts.count
     )
+  }
+}
+
+// MARK: - String Extension for parsing DateTime strings
+
+extension String {
+  func toDate() -> Date? {
+    let formatter = ISO8601DateFormatter()
+    // Try with fractional seconds first
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let date = formatter.date(from: self) {
+      return date
+    }
+    
+    // Try without fractional seconds
+    formatter.formatOptions = [.withInternetDateTime]
+    if let date = formatter.date(from: self) {
+      return date
+    }
+    
+    // Try standard date formatter as fallback
+    let dateFormatter = DateFormatter()
+    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+    dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+    
+    // Try Prisma/PostgreSQL format: "2025-12-10 20:30:00 +00:00"
+    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+    if let date = dateFormatter.date(from: self) {
+      return date
+    }
+    
+    // Try with milliseconds: "2025-12-10 20:30:00.123 +00:00"
+    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS Z"
+    if let date = dateFormatter.date(from: self) {
+      return date
+    }
+    
+    dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    if let date = dateFormatter.date(from: self) {
+      return date
+    }
+    
+    // Try without milliseconds
+    dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+    return dateFormatter.date(from: self)
   }
 }

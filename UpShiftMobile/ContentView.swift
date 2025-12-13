@@ -9,7 +9,10 @@ struct ContentView: View {
   @State private var selectedTab = 0
 
   var body: some View {
-      if clerk.user != nil{
+      if !clerk.isLoaded{
+          LoadingView()
+      }
+      else if clerk.user != nil{
           NaivigatorView(clerk: clerk)
       }else{
           SignInUpView(clerk: clerk, authIsPresented: $authIsPresented)
@@ -138,3 +141,52 @@ struct NaivigatorView: View{
     }
 }
 
+
+
+struct LoadingView: View {
+  var body: some View {
+    ZStack {
+      // Gradient background
+      LinearGradient(
+        gradient: Gradient(colors: [
+          Color(red: 0.4, green: 0.2, blue: 0.9),
+          Color(red: 0.8, green: 0.3, blue: 0.7),
+          Color(red: 1.0, green: 0.5, blue: 0.4)
+        ]),
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+      )
+      .ignoresSafeArea()
+      
+      // Animated circles for visual interest
+      GeometryReader { geometry in
+        Circle()
+          .fill(Color.white.opacity(0.1))
+          .frame(width: 300, height: 300)
+          .offset(x: -100, y: -150)
+          .blur(radius: 40)
+        
+        Circle()
+          .fill(Color.white.opacity(0.15))
+          .frame(width: 250, height: 250)
+          .offset(x: geometry.size.width - 150, y: geometry.size.height - 100)
+          .blur(radius: 30)
+        
+        Circle()
+          .fill(Color.white.opacity(0.08))
+          .frame(width: 200, height: 200)
+          .offset(x: geometry.size.width / 2 - 100, y: geometry.size.height / 2 - 100)
+          .blur(radius: 20)
+      }
+      
+      // Content
+      VStack {
+        Spacer()
+        
+        Spacer()
+        
+        Spacer()
+      }
+    }
+  }
+}

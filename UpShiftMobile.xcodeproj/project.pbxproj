@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5B3BC5A52EEA3FEF00B1BAE2 /* DepartmentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B3BC5A42EEA3FEF00B1BAE2 /* DepartmentViewModel.swift */; };
 		5B3BC5CF2EEA437E00B1BAE2 /* TimeEntry.graphql in Resources */ = {isa = PBXBuildFile; fileRef = 5B3BC5CE2EEA437E00B1BAE2 /* TimeEntry.graphql */; };
 		5B3BC5FF2EEA47EA00B1BAE2 /* ClaimShift.graphql in Resources */ = {isa = PBXBuildFile; fileRef = 5B3BC5D82EEA47EA00B1BAE2 /* ClaimShift.graphql */; };
 		5B3BC6002EEA47EA00B1BAE2 /* GetMyShifts.graphql in Resources */ = {isa = PBXBuildFile; fileRef = 5B3BC5D92EEA47EA00B1BAE2 /* GetMyShifts.graphql */; };
@@ -42,7 +41,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		5B3BC5A42EEA3FEF00B1BAE2 /* DepartmentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartmentViewModel.swift; sourceTree = "<group>"; };
 		5B3BC5CE2EEA437E00B1BAE2 /* TimeEntry.graphql */ = {isa = PBXFileReference; lastKnownFileType = text; path = TimeEntry.graphql; sourceTree = "<group>"; };
 		5B3BC5D82EEA47EA00B1BAE2 /* ClaimShift.graphql */ = {isa = PBXFileReference; lastKnownFileType = text; path = ClaimShift.graphql; sourceTree = "<group>"; };
 		5B3BC5D92EEA47EA00B1BAE2 /* GetMyShifts.graphql */ = {isa = PBXFileReference; lastKnownFileType = text; path = GetMyShifts.graphql; sourceTree = "<group>"; };
@@ -120,7 +118,6 @@
 				5BAA263B2ED790A300205CF2 /* UpShiftMobileTests */,
 				5BAA26452ED790A300205CF2 /* UpShiftMobileUITests */,
 				5BAA262A2ED790A200205CF2 /* Products */,
-				5B3BC5A42EEA3FEF00B1BAE2 /* DepartmentViewModel.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -314,7 +311,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B3BC5A52EEA3FEF00B1BAE2 /* DepartmentViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
