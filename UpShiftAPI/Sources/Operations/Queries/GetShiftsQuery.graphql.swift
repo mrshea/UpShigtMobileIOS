@@ -8,7 +8,7 @@ public struct GetShiftsQuery: GraphQLQuery {
   public static let operationName: String = "GetShifts"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query GetShifts($startDate: DateTime, $endDate: DateTime) { shifts(startDate: $startDate, endDate: $endDate) { __typename id date startTime endTime peopleNeeded role availableSpots claimedBy { __typename id clerkId employeeName employeeEmail } } }"#
+      #"query GetShifts($startDate: DateTime, $endDate: DateTime) { shifts(startDate: $startDate, endDate: $endDate) { __typename id date startTime endTime peopleNeeded departmentId department { __typename id name description orgId } availableSpots claimedBy { __typename id clerkId employeeName employeeEmail } } }"#
     ))
 
   public var startDate: GraphQLNullable<DateTime>
@@ -56,10 +56,11 @@ public struct GetShiftsQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("id", UpShiftAPI.ID.self),
         .field("date", UpShiftAPI.DateTime.self),
-        .field("startTime", String.self),
-        .field("endTime", String.self),
+        .field("startTime", UpShiftAPI.DateTime.self),
+        .field("endTime", UpShiftAPI.DateTime.self),
         .field("peopleNeeded", Int.self),
-        .field("role", String.self),
+        .field("departmentId", String?.self),
+        .field("department", Department?.self),
         .field("availableSpots", Int.self),
         .field("claimedBy", [ClaimedBy].self),
       ] }
@@ -69,12 +70,38 @@ public struct GetShiftsQuery: GraphQLQuery {
 
       public var id: UpShiftAPI.ID { __data["id"] }
       public var date: UpShiftAPI.DateTime { __data["date"] }
-      public var startTime: String { __data["startTime"] }
-      public var endTime: String { __data["endTime"] }
+      public var startTime: UpShiftAPI.DateTime { __data["startTime"] }
+      public var endTime: UpShiftAPI.DateTime { __data["endTime"] }
       public var peopleNeeded: Int { __data["peopleNeeded"] }
-      public var role: String { __data["role"] }
+      public var departmentId: String? { __data["departmentId"] }
+      public var department: Department? { __data["department"] }
       public var availableSpots: Int { __data["availableSpots"] }
       public var claimedBy: [ClaimedBy] { __data["claimedBy"] }
+
+      /// Shift.Department
+      ///
+      /// Parent Type: `Department`
+      public struct Department: UpShiftAPI.SelectionSet {
+        @_spi(Unsafe) public let __data: DataDict
+        @_spi(Unsafe) public init(_dataDict: DataDict) { __data = _dataDict }
+
+        @_spi(Execution) public static var __parentType: any ApolloAPI.ParentType { UpShiftAPI.Objects.Department }
+        @_spi(Execution) public static var __selections: [ApolloAPI.Selection] { [
+          .field("__typename", String.self),
+          .field("id", UpShiftAPI.ID.self),
+          .field("name", String.self),
+          .field("description", String?.self),
+          .field("orgId", String.self),
+        ] }
+        @_spi(Execution) public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetShiftsQuery.Data.Shift.Department.self
+        ] }
+
+        public var id: UpShiftAPI.ID { __data["id"] }
+        public var name: String { __data["name"] }
+        public var description: String? { __data["description"] }
+        public var orgId: String { __data["orgId"] }
+      }
 
       /// Shift.ClaimedBy
       ///

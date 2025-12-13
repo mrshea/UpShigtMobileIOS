@@ -1,0 +1,3 @@
+mutation UnclaimShift($shiftId: ID!) {
+  unclaimShift(shiftId: $shiftId)
+}

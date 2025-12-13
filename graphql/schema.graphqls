@@ -53,13 +53,21 @@ type User {
   role: String!
 }
 
+type Department {
+  id: ID!
+  name: String!
+  description: String
+  orgId: String!
+}
+
 type Shift {
   id: ID!
   date: DateTime!
-  startTime: String!
-  endTime: String!
+  startTime: DateTime!
+  endTime: DateTime!
   peopleNeeded: Int!
-  role: String!
+  departmentId: String
+  department: Department
   createdAt: DateTime!
   updatedAt: DateTime!
   createdByClerkId: String
@@ -131,7 +139,7 @@ type Query {
 }
 
 type Mutation {
-  createShift(date: DateTime!, startTime: String!, endTime: String!, peopleNeeded: Int!, role: String!): Shift!
+  createShift(date: DateTime!, startTime: DateTime!, endTime: DateTime!, peopleNeeded: Int!, departmentId: String!): Shift!
   claimShift(shiftId: ID!): ShiftClaim!
   unclaimShift(shiftId: ID!): Boolean!
   deleteShift(id: ID!): Boolean!

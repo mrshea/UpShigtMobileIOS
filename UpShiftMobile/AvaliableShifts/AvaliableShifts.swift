@@ -49,7 +49,10 @@ struct AvaliableShifts: View {
   }
   
   var filteredShifts: [Shift] {
-    viewModel.shifts.filter { shift in
+    // Create a set of shift IDs that the user has already claimed
+    let claimedShiftIds = Set(viewModel.myShifts.map { $0.shiftId })
+    
+    return viewModel.shifts.filter { shift in
       // Filter by role
       let matchesRole = selectedRole == "All" || shift.role == selectedRole
       
@@ -60,7 +63,10 @@ struct AvaliableShifts: View {
       // Filter out full shifts
       let notFull = !shift.isFull
       
-      return matchesRole && matchesSearch && notFull
+      // Filter out shifts the user has already claimed
+      let notAlreadyClaimed = !claimedShiftIds.contains(shift.id)
+      
+      return matchesRole && matchesSearch && notFull && notAlreadyClaimed
     }
   }
   
@@ -233,6 +239,7 @@ struct AvaliableShifts: View {
           }
           .refreshable {
               await loadShifts()
+              await viewModel.fetchMyShifts()
           }
         }
       }
@@ -247,6 +254,7 @@ struct AvaliableShifts: View {
       }
       .task {
         await loadShifts()
+        await viewModel.fetchMyShifts()
       }
     }
   }
@@ -265,7 +273,9 @@ struct AvaliableShifts: View {
       try await viewModel.claimShift(shiftId: shift.id)
       claimedShift = shift
       showClaimedAlert = true
+      // Fetch both available shifts AND claimed shifts to update the UI
       await loadShifts()
+      await viewModel.fetchMyShifts()
     } catch {
       viewModel.errorMessage = error.localizedDescription
     }
@@ -317,7 +327,7 @@ struct AvailableShiftCard: View {
           HStack(spacing: 4) {
             Image(systemName: "clock")
               .font(.caption)
-            Text("\(shift.startTime) - \(shift.endTime)")
+            Text(shift.timeRangeFormatted)
               .font(.subheadline)
           }
           .foregroundStyle(.secondary)

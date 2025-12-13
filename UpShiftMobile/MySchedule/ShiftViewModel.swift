@@ -22,8 +22,11 @@ class ShiftViewModel: ObservableObject {
   
   // MARK: - Fetch All Shifts
   
-    func fetchShifts(startDate: Date, endDate: Date) async {
-        isLoading = true
+    func fetchShifts(startDate: Date, endDate: Date, useCache: Bool = true) async {
+        // Only show loading on first load (when cache is empty)
+        if shifts.isEmpty {
+            isLoading = true
+        }
         errorMessage = nil
         
         do {
@@ -32,31 +35,48 @@ class ShiftViewModel: ObservableObject {
                 endDate: .some(endDate.iso8601)
             )
             
-            // 👇 UPDATED: Wrapped in a continuation to bridge closure to async/await
+            // Use cache-first policy: show cached data immediately, then fetch fresh data
+            let cachePolicy: CachePolicy = useCache ? .returnCacheDataAndFetch : .fetchIgnoringCacheData
+            
             let result = try await withCheckedThrowingContinuation { continuation in
                 apolloClient.fetch(
                     query: query,
-                    cachePolicy: .fetchIgnoringCacheData
+                    cachePolicy: cachePolicy
                 ) { result in
-                    // Resume the async function with the result (success or failure)
                     continuation.resume(with: result)
                 }
             }
             
             if let data = result.data {
-                self.shifts = data.shifts.compactMap { shift in
-                    guard let date = shift.date.toDate() else {
-                        print("Failed to parse date: \(shift.date)")
+                self.shifts = data.shifts.compactMap { shift -> Shift? in
+                    guard let date = shift.date.toDate(),
+                          let startTime = shift.startTime.toDate(),
+                          let endTime = shift.endTime.toDate() else {
+                        print("Failed to parse dates for shift: \(shift.id)")
+                        print("  - date: \(shift.date)")
+                        print("  - startTime: \(shift.startTime)")
+                        print("  - endTime: \(shift.endTime)")
                         return nil
+                    }
+                    
+                    // Map department if available
+                    let department: Department? = shift.department.map { dept in
+                        Department(
+                            id: dept.id,
+                            name: dept.name,
+                            description: dept.description,
+                            orgId: dept.orgId
+                        )
                     }
                     
                     return Shift(
                         id: shift.id,
                         date: date,
-                        startTime: shift.startTime,
-                        endTime: shift.endTime,
+                        startTime: startTime,
+                        endTime: endTime,
                         peopleNeeded: shift.peopleNeeded,
-                        role: shift.role,
+                        departmentId: shift.departmentId,
+                        department: department,
                         availableSpots: shift.availableSpots,
                         claimedBy: shift.claimedBy.map { claimedBy in
                             ClaimedEmployee(
@@ -69,6 +89,8 @@ class ShiftViewModel: ObservableObject {
                     )
                 }
                 errorMessage = nil
+            }else{
+                print(result.errors)
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -91,12 +113,36 @@ class ShiftViewModel: ObservableObject {
       
       if let data = result.data {
         // Map GraphQL response to local MyShiftClaim model
-        self.myShifts = data.myShifts.compactMap { myShift in
+        self.myShifts = data.myShifts.compactMap { myShift -> MyShiftClaim? in
           // Convert DateTime strings to Dates
           guard let claimedAt = myShift.claimedAt.toDate(),
-                let shiftDate = myShift.shift.date.toDate() else {
+                let shiftDate = myShift.shift.date.toDate(),
+                let startTime = myShift.shift.startTime.toDate(),
+                let endTime = myShift.shift.endTime.toDate() else {
             print("Failed to parse dates for shift: \(myShift.id)")
+            print("  - claimedAt: \(myShift.claimedAt)")
+            print("  - shiftDate: \(myShift.shift.date)")
+            print("  - startTime: \(myShift.shift.startTime)")
+            print("  - endTime: \(myShift.shift.endTime)")
             return nil
+          }
+          
+          // Debug: Log department data
+          print("🔍 Shift \(myShift.shift.id):")
+          print("  - departmentId: \(myShift.shift.departmentId ?? "nil")")
+          print("  - department object: \(myShift.shift.department != nil ? "present" : "nil")")
+          if let dept = myShift.shift.department {
+            print("  - department.name: \(dept.name)")
+          }
+          
+          // Map department if available
+          let department: Department? = myShift.shift.department.map { dept in
+              Department(
+                  id: dept.id,
+                  name: dept.name,
+                  description: dept.description,
+                  orgId: dept.orgId
+              )
           }
           
           return MyShiftClaim(
@@ -106,9 +152,10 @@ class ShiftViewModel: ObservableObject {
             shift: ShiftDetail(
               id: myShift.shift.id,
               date: shiftDate,
-              startTime: myShift.shift.startTime,
-              endTime: myShift.shift.endTime,
-              role: myShift.shift.role
+              startTime: startTime,
+              endTime: endTime,
+              departmentId: myShift.shift.departmentId,
+              department: department
             )
           )
         }
@@ -136,6 +183,9 @@ class ShiftViewModel: ObservableObject {
         userInfo: [NSLocalizedDescriptionKey: error.message]
       )
     }
+    
+    // Clear the Apollo cache to force fresh data on next fetch
+    try? await apolloClient.store.clearCache()
   }
   
   // MARK: - Unclaim Shift
@@ -152,6 +202,9 @@ class ShiftViewModel: ObservableObject {
         userInfo: [NSLocalizedDescriptionKey: error.message]
       )
     }
+    
+    // Clear the Apollo cache to force fresh data on next fetch
+    try? await apolloClient.store.clearCache()
   }
   
   // MARK: - Helper to get shifts for a specific date
@@ -212,6 +265,21 @@ extension String {
     
     // Try standard date formatter as fallback
     let dateFormatter = DateFormatter()
+    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+    dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+    
+    // Try Prisma/PostgreSQL format: "2025-12-10 20:30:00 +00:00"
+    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+    if let date = dateFormatter.date(from: self) {
+      return date
+    }
+    
+    // Try with milliseconds: "2025-12-10 20:30:00.123 +00:00"
+    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS Z"
+    if let date = dateFormatter.date(from: self) {
+      return date
+    }
+    
     dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
     if let date = dateFormatter.date(from: self) {
       return date

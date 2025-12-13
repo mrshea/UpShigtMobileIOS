@@ -341,7 +341,7 @@ struct ShiftCard: View {
           HStack(spacing: 4) {
             Image(systemName: "clock")
               .font(.caption)
-            Text("\(shift.startTime) - \(shift.endTime)")
+            Text(shift.timeRangeFormatted)
               .font(.subheadline)
           }
           .foregroundStyle(.secondary)
@@ -411,7 +411,7 @@ struct MyShiftCard: View {
           HStack(spacing: 4) {
             Image(systemName: "clock")
               .font(.caption)
-            Text("\(claim.shift.startTime) - \(claim.shift.endTime)")
+            Text(claim.shift.timeRangeFormatted)
               .font(.subheadline)
           }
           .foregroundStyle(.secondary)

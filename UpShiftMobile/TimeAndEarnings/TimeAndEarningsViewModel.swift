@@ -148,13 +148,16 @@ class TimeAndEarningsViewModel: ObservableObject {
                 shiftDate < now else {
             return nil
           }
+          
+          // Get department name, fallback to "Unknown"
+          let departmentName = myShift.shift.department?.name ?? "Unknown"
 
           return CompletedShift(
             id: myShift.id,
             date: shiftDate,
             startTime: myShift.shift.startTime,
             endTime: myShift.shift.endTime,
-            role: myShift.shift.role,
+            role: departmentName,
             hourlyRate: self.currentHourlyRate
           )
         }

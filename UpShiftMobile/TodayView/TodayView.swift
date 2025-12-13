@@ -270,7 +270,7 @@ struct TodayShiftCard: View {
           HStack(spacing: 6) {
             Image(systemName: "clock.fill")
               .font(.body)
-            Text("\(shift.shiftClaim.shift.startTime) - \(shift.shiftClaim.shift.endTime)")
+            Text(shift.shiftClaim.shift.timeRangeFormatted)
               .font(.title3)
               .fontWeight(.medium)
           }
@@ -518,25 +518,8 @@ struct TodayShiftCard: View {
   }
 
   private func getShiftStartDate() -> Date {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "HH:mm"
-
-    guard let startTime = dateFormatter.date(from: shift.shiftClaim.shift.startTime) else {
-      return shift.shiftClaim.shift.date
-    }
-
-    let calendar = Calendar.current
-    let dateComponents = calendar.dateComponents([.year, .month, .day], from: shift.shiftClaim.shift.date)
-    let timeComponents = calendar.dateComponents([.hour, .minute], from: startTime)
-
-    var combined = DateComponents()
-    combined.year = dateComponents.year
-    combined.month = dateComponents.month
-    combined.day = dateComponents.day
-    combined.hour = timeComponents.hour
-    combined.minute = timeComponents.minute
-
-    return calendar.date(from: combined) ?? shift.shiftClaim.shift.date
+    // Since startTime is now a Date, we can use it directly
+    return shift.shiftClaim.shift.startTime
   }
 
   // MARK: - Status Badge

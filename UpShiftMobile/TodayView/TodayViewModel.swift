@@ -46,7 +46,9 @@ class TodayViewModel: ObservableObject {
 
       // Filter to today's shifts only and attach time entries
       let todayShiftClaims = shifts.compactMap { myShift -> TodayShift? in
-        guard let shiftDate = myShift.shift.date.toDate() else {
+        guard let shiftDate = myShift.shift.date.toDate(),
+              let startTime = myShift.shift.startTime.toDate(),
+              let endTime = myShift.shift.endTime.toDate() else {
           return nil
         }
 
@@ -55,6 +57,16 @@ class TodayViewModel: ObservableObject {
           return nil
         }
 
+        // Map department if available
+        let department: Department? = myShift.shift.department.map { dept in
+            Department(
+                id: dept.id,
+                name: dept.name,
+                description: dept.description,
+                orgId: dept.orgId
+            )
+        }
+        
         let myShiftClaim = MyShiftClaim(
           id: myShift.id,
           shiftId: myShift.shiftId,
@@ -62,9 +74,10 @@ class TodayViewModel: ObservableObject {
           shift: ShiftDetail(
             id: myShift.shift.id,
             date: shiftDate,
-            startTime: myShift.shift.startTime,
-            endTime: myShift.shift.endTime,
-            role: myShift.shift.role
+            startTime: startTime,
+            endTime: endTime,
+            departmentId: myShift.shift.departmentId,
+            department: department
           )
         )
 
@@ -164,72 +177,50 @@ class TodayViewModel: ObservableObject {
 
     // Determine if requires manager approval (early/late by more than 15 minutes)
     let requiresApproval = (lateCheckIn ?? 0) > 15 || (earlyCheckOut ?? 0) > 15
+    
+    // Calculate actual hours worked from times if available
+    let actualHours: Double?
+    if let checkInTime = checkInTime, let checkOutTime = checkOutTime {
+      actualHours = checkOutTime.timeIntervalSince(checkInTime) / 3600
+    } else {
+      actualHours = nil
+    }
 
     return CheckInOutRecord(
       id: entry.id,
       shiftClaimId: shift.id,
       checkInTime: checkInTime,
       checkOutTime: checkOutTime,
-      checkInLatitude: entry.clockInLatitude,
-      checkInLongitude: entry.clockInLongitude,
-      checkOutLatitude: entry.clockOutLatitude,
-      checkOutLongitude: entry.clockOutLongitude,
+      checkInLatitude: nil,  // Not available in GraphQL schema
+      checkInLongitude: nil, // Not available in GraphQL schema
+      checkOutLatitude: nil, // Not available in GraphQL schema
+      checkOutLongitude: nil, // Not available in GraphQL schema
       status: status,
       requiresManagerApproval: requiresApproval,
       earlyCheckInMinutes: earlyCheckIn,
       lateCheckInMinutes: lateCheckIn,
       earlyCheckOutMinutes: earlyCheckOut,
       lateCheckOutMinutes: lateCheckOut,
-      actualHoursWorked: entry.hoursWorked,
+      actualHoursWorked: actualHours,
       scheduledHours: scheduledHours
     )
   }
 
-  private func calculateScheduledHours(startTime: String, endTime: String) -> Double {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "HH:mm"
-
-    guard let start = formatter.date(from: startTime),
-          let end = formatter.date(from: endTime) else {
-      return 0
-    }
-
-    let interval = end.timeIntervalSince(start)
+  private func calculateScheduledHours(startTime: Date, endTime: Date) -> Double {
+    let interval = endTime.timeIntervalSince(startTime)
     return interval / 3600
   }
 
   private func calculateCheckInTiming(
     checkInTime: Date?,
-    scheduledStart: String,
+    scheduledStart: Date,
     shiftDate: Date
   ) -> (early: Int?, late: Int?) {
     guard let checkInTime = checkInTime else {
       return (nil, nil)
     }
 
-    let formatter = DateFormatter()
-    formatter.dateFormat = "HH:mm"
-
-    guard let startTime = formatter.date(from: scheduledStart) else {
-      return (nil, nil)
-    }
-
-    let calendar = Calendar.current
-    let dateComponents = calendar.dateComponents([.year, .month, .day], from: shiftDate)
-    let timeComponents = calendar.dateComponents([.hour, .minute], from: startTime)
-
-    var combined = DateComponents()
-    combined.year = dateComponents.year
-    combined.month = dateComponents.month
-    combined.day = dateComponents.day
-    combined.hour = timeComponents.hour
-    combined.minute = timeComponents.minute
-
-    guard let scheduledStartDate = calendar.date(from: combined) else {
-      return (nil, nil)
-    }
-
-    let difference = checkInTime.timeIntervalSince(scheduledStartDate) / 60 // in minutes
+    let difference = checkInTime.timeIntervalSince(scheduledStart) / 60 // in minutes
 
     if difference < 0 {
       return (Int(abs(difference)), nil)
@@ -242,36 +233,14 @@ class TodayViewModel: ObservableObject {
 
   private func calculateCheckOutTiming(
     checkOutTime: Date?,
-    scheduledEnd: String,
+    scheduledEnd: Date,
     shiftDate: Date
   ) -> (early: Int?, late: Int?) {
     guard let checkOutTime = checkOutTime else {
       return (nil, nil)
     }
 
-    let formatter = DateFormatter()
-    formatter.dateFormat = "HH:mm"
-
-    guard let endTime = formatter.date(from: scheduledEnd) else {
-      return (nil, nil)
-    }
-
-    let calendar = Calendar.current
-    let dateComponents = calendar.dateComponents([.year, .month, .day], from: shiftDate)
-    let timeComponents = calendar.dateComponents([.hour, .minute], from: endTime)
-
-    var combined = DateComponents()
-    combined.year = dateComponents.year
-    combined.month = dateComponents.month
-    combined.day = dateComponents.day
-    combined.hour = timeComponents.hour
-    combined.minute = timeComponents.minute
-
-    guard let scheduledEndDate = calendar.date(from: combined) else {
-      return (nil, nil)
-    }
-
-    let difference = checkOutTime.timeIntervalSince(scheduledEndDate) / 60 // in minutes
+    let difference = checkOutTime.timeIntervalSince(scheduledEnd) / 60 // in minutes
 
     if difference < 0 {
       return (Int(abs(difference)), nil)
@@ -340,7 +309,7 @@ class TodayViewModel: ObservableObject {
         print("Successfully clocked in:")
         print("- Time Entry ID: \(data.clockIn.id)")
         print("- Clock In Time: \(data.clockIn.clockInTime)")
-        print("- Location: (\(data.clockIn.clockInLatitude ?? 0), \(data.clockIn.clockInLongitude ?? 0))")
+        print("- Shift ID: \(data.clockIn.shiftId ?? "N/A")")
       }
 
       // Refresh the shifts list
@@ -407,7 +376,7 @@ class TodayViewModel: ObservableObject {
         print("Successfully clocked out:")
         print("- Time Entry ID: \(data.clockOut.id)")
         print("- Clock Out Time: \(data.clockOut.clockOutTime ?? "N/A")")
-        print("- Hours Worked: \(data.clockOut.hoursWorked ?? 0)")
+        // Hours worked will be calculated on the backend
       }
 
       // Refresh the shifts list

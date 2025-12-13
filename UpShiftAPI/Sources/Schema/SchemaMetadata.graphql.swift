@@ -21,6 +21,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
   @_spi(Execution) public static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
     switch typename {
     case "ClockStatus": return UpShiftAPI.Objects.ClockStatus
+    case "Department": return UpShiftAPI.Objects.Department
     case "Mutation": return UpShiftAPI.Objects.Mutation
     case "Query": return UpShiftAPI.Objects.Query
     case "Shift": return UpShiftAPI.Objects.Shift

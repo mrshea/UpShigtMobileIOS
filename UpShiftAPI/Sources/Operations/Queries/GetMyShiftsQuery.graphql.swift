@@ -8,7 +8,7 @@ public struct GetMyShiftsQuery: GraphQLQuery {
   public static let operationName: String = "GetMyShifts"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query GetMyShifts { myShifts { __typename id shiftId claimedAt shift { __typename id date startTime endTime role } } }"#
+      #"query GetMyShifts { myShifts { __typename id shiftId claimedAt shift { __typename id date startTime endTime departmentId department { __typename id name description orgId } } } }"#
     ))
 
   public init() {}
@@ -63,9 +63,10 @@ public struct GetMyShiftsQuery: GraphQLQuery {
           .field("__typename", String.self),
           .field("id", UpShiftAPI.ID.self),
           .field("date", UpShiftAPI.DateTime.self),
-          .field("startTime", String.self),
-          .field("endTime", String.self),
-          .field("role", String.self),
+          .field("startTime", UpShiftAPI.DateTime.self),
+          .field("endTime", UpShiftAPI.DateTime.self),
+          .field("departmentId", String?.self),
+          .field("department", Department?.self),
         ] }
         @_spi(Execution) public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
           GetMyShiftsQuery.Data.MyShift.Shift.self
@@ -73,9 +74,35 @@ public struct GetMyShiftsQuery: GraphQLQuery {
 
         public var id: UpShiftAPI.ID { __data["id"] }
         public var date: UpShiftAPI.DateTime { __data["date"] }
-        public var startTime: String { __data["startTime"] }
-        public var endTime: String { __data["endTime"] }
-        public var role: String { __data["role"] }
+        public var startTime: UpShiftAPI.DateTime { __data["startTime"] }
+        public var endTime: UpShiftAPI.DateTime { __data["endTime"] }
+        public var departmentId: String? { __data["departmentId"] }
+        public var department: Department? { __data["department"] }
+
+        /// MyShift.Shift.Department
+        ///
+        /// Parent Type: `Department`
+        public struct Department: UpShiftAPI.SelectionSet {
+          @_spi(Unsafe) public let __data: DataDict
+          @_spi(Unsafe) public init(_dataDict: DataDict) { __data = _dataDict }
+
+          @_spi(Execution) public static var __parentType: any ApolloAPI.ParentType { UpShiftAPI.Objects.Department }
+          @_spi(Execution) public static var __selections: [ApolloAPI.Selection] { [
+            .field("__typename", String.self),
+            .field("id", UpShiftAPI.ID.self),
+            .field("name", String.self),
+            .field("description", String?.self),
+            .field("orgId", String.self),
+          ] }
+          @_spi(Execution) public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetMyShiftsQuery.Data.MyShift.Shift.Department.self
+          ] }
+
+          public var id: UpShiftAPI.ID { __data["id"] }
+          public var name: String { __data["name"] }
+          public var description: String? { __data["description"] }
+          public var orgId: String { __data["orgId"] }
+        }
       }
     }
   }

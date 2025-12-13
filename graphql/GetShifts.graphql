@@ -1,0 +1,23 @@
+query GetShifts($startDate: DateTime, $endDate: DateTime) {
+  shifts(startDate: $startDate, endDate: $endDate) {
+    id
+    date
+    startTime
+    endTime
+    peopleNeeded
+    departmentId
+    department {
+      id
+      name
+      description
+      orgId
+    }
+    availableSpots
+    claimedBy {
+      id
+      clerkId
+      employeeName
+      employeeEmail
+    }
+  }
+}

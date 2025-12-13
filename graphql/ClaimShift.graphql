@@ -1,0 +1,20 @@
+mutation ClaimShift($shiftId: ID!) {
+  claimShift(shiftId: $shiftId) {
+    id
+    shiftId
+    claimedAt
+    shift {
+      id
+      date
+      startTime
+      endTime
+      departmentId
+      department {
+        id
+        name
+        description
+        orgId
+      }
+    }
+  }
+}

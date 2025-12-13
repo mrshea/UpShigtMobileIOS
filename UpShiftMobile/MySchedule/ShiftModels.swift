@@ -7,17 +7,36 @@
 
 import Foundation
 
+// MARK: - Department Models
+
+struct Department: Identifiable, Codable {
+  let id: String
+  let name: String
+  let description: String?
+  let orgId: String
+  
+  var displayName: String {
+    name
+  }
+}
+
 // MARK: - Shift Models
 
 struct Shift: Identifiable, Codable {
   let id: String
   let date: Date
-  let startTime: String
-  let endTime: String
+  let startTime: Date
+  let endTime: Date
   let peopleNeeded: Int
-  let role: String
+  let departmentId: String?
+  let department: Department?
   let availableSpots: Int
   let claimedBy: [ClaimedEmployee]?
+  
+  // Legacy support - returns department name or "Unknown"
+  var role: String {
+    department?.name ?? "Unknown"
+  }
   
   var isClaimed: Bool {
     availableSpots < peopleNeeded
@@ -25,6 +44,19 @@ struct Shift: Identifiable, Codable {
   
   var isFull: Bool {
     availableSpots == 0
+  }
+  
+  // Formatted time strings for display
+  var startTimeFormatted: String {
+    startTime.formatted(date: .omitted, time: .shortened)
+  }
+  
+  var endTimeFormatted: String {
+    endTime.formatted(date: .omitted, time: .shortened)
+  }
+  
+  var timeRangeFormatted: String {
+    "\(startTimeFormatted) - \(endTimeFormatted)"
   }
 }
 
@@ -45,9 +77,28 @@ struct MyShiftClaim: Identifiable, Codable {
 struct ShiftDetail: Identifiable, Codable {
   let id: String
   let date: Date
-  let startTime: String
-  let endTime: String
-  let role: String
+  let startTime: Date
+  let endTime: Date
+  let departmentId: String?
+  let department: Department?
+  
+  // Legacy support - returns department name or "Unknown"
+  var role: String {
+    department?.name ?? "Unknown"
+  }
+  
+  // Formatted time strings for display
+  var startTimeFormatted: String {
+    startTime.formatted(date: .omitted, time: .shortened)
+  }
+  
+  var endTimeFormatted: String {
+    endTime.formatted(date: .omitted, time: .shortened)
+  }
+  
+  var timeRangeFormatted: String {
+    "\(startTimeFormatted) - \(endTimeFormatted)"
+  }
 }
 
 // MARK: - Response Wrappers
