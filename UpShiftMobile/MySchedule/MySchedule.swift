@@ -104,6 +104,9 @@ struct MySchedule: View {
         shiftsContentView
       }
     }
+    .refreshable {
+      await forceRefreshShifts()
+    }
   }
 
   private var calendarView: some View {
@@ -153,7 +156,7 @@ struct MySchedule: View {
 
       Spacer()
 
-      Button(action: { Task { await loadShifts() } }) {
+      Button(action: { Task { await forceRefreshShifts() } }) {
         Image(systemName: "arrow.clockwise")
           .foregroundStyle(.blue)
       }
@@ -193,7 +196,7 @@ struct MySchedule: View {
         .multilineTextAlignment(.center)
 
       Button("Retry") {
-        Task { await loadShifts() }
+        Task { await forceRefreshShifts() }
       }
       .buttonStyle(.bordered)
     }
@@ -219,7 +222,8 @@ struct MySchedule: View {
             Task {
               do {
                 try await viewModel.unclaimShift(shiftId: claim.shiftId)
-                await loadShifts()
+                // Force refresh without cache since we know data changed
+                await forceRefreshShifts()
               } catch {
                 viewModel.errorMessage = error.localizedDescription
               }
@@ -241,7 +245,7 @@ struct MySchedule: View {
   
   // MARK: - Helper Methods
   
-  private func loadShifts() async {
+  private func loadShifts(useCache: Bool = true) async {
     guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: selectedDate) else {
       return
     }
@@ -249,8 +253,14 @@ struct MySchedule: View {
     let startDate = weekInterval.start
     let endDate = calendar.date(byAdding: .day, value: 7, to: startDate) ?? weekInterval.end
     
-    await viewModel.fetchShifts(startDate: startDate, endDate: endDate)
-    await viewModel.fetchMyShifts()
+    // Fetch shifts with caching - will show cached data first, then update with fresh data
+    await viewModel.fetchShifts(startDate: startDate, endDate: endDate, useCache: useCache)
+    await viewModel.fetchMyShifts(useCache: useCache)
+  }
+  
+  // Force refresh without cache
+  private func forceRefreshShifts() async {
+    await loadShifts(useCache: false)
   }
 }
 

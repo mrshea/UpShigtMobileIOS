@@ -25,8 +25,11 @@ class TodayViewModel: ObservableObject {
 
   // MARK: - Fetch Today's Shifts
 
-  func fetchTodayShifts() async {
-    isLoading = true
+  func fetchTodayShifts(useCache: Bool = true) async {
+    // Only show loading on first load (when cache is empty)
+    if todayShifts.isEmpty {
+      isLoading = true
+    }
     errorMessage = nil
 
     do {
@@ -34,8 +37,8 @@ class TodayViewModel: ObservableObject {
       let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today) ?? Date()
 
       // Fetch shifts and time entries in parallel
-      async let shiftsResult = fetchMyShifts()
-      async let timeEntriesResult = fetchMyTimeEntries(startDate: today, endDate: tomorrow)
+      async let shiftsResult = fetchMyShifts(useCache: useCache)
+      async let timeEntriesResult = fetchMyTimeEntries(startDate: today, endDate: tomorrow, useCache: useCache)
 
       let (shifts, timeEntries) = try await (shiftsResult, timeEntriesResult)
 
@@ -106,37 +109,53 @@ class TodayViewModel: ObservableObject {
 
   // MARK: - Helper Methods
 
-  private func fetchMyShifts() async throws -> [GetMyShiftsQuery.Data.MyShift] {
+  private func fetchMyShifts(useCache: Bool = true) async throws -> [GetMyShiftsQuery.Data.MyShift] {
     let query = GetMyShiftsQuery()
 
-    let result = try await withCheckedThrowingContinuation { continuation in
-      apolloClient.fetch(
+    if useCache {
+      // Use cache and network: returns cache first, then network
+      var lastResult: [GetMyShiftsQuery.Data.MyShift] = []
+      for try await result in try apolloClient.fetch(
         query: query,
-        cachePolicy: .fetchIgnoringCacheData
-      ) { result in
-        continuation.resume(with: result)
+        cachePolicy: .cacheAndNetwork
+      ) {
+        lastResult = result.data?.myShifts ?? []
       }
+      return lastResult
+    } else {
+      // Network only: skip cache
+      let result = try await apolloClient.fetch(
+        query: query,
+        cachePolicy: .networkOnly
+      )
+      return result.data?.myShifts ?? []
     }
-
-    return result.data?.myShifts ?? []
   }
 
-  private func fetchMyTimeEntries(startDate: Date, endDate: Date) async throws -> [GetMyTimeEntriesQuery.Data.MyTimeEntry] {
+  private func fetchMyTimeEntries(startDate: Date, endDate: Date, useCache: Bool = true) async throws -> [GetMyTimeEntriesQuery.Data.MyTimeEntry] {
     let query = GetMyTimeEntriesQuery(
       startDate: .some(startDate.toISO8601String()),
       endDate: .some(endDate.toISO8601String())
     )
 
-    let result = try await withCheckedThrowingContinuation { continuation in
-      apolloClient.fetch(
+    if useCache {
+      // Use cache and network: returns cache first, then network
+      var lastResult: [GetMyTimeEntriesQuery.Data.MyTimeEntry] = []
+      for try await result in try apolloClient.fetch(
         query: query,
-        cachePolicy: .fetchIgnoringCacheData
-      ) { result in
-        continuation.resume(with: result)
+        cachePolicy: .cacheAndNetwork
+      ) {
+        lastResult = result.data?.myTimeEntries ?? []
       }
+      return lastResult
+    } else {
+      // Network only: skip cache
+      let result = try await apolloClient.fetch(
+        query: query,
+        cachePolicy: .networkOnly
+      )
+      return result.data?.myTimeEntries ?? []
     }
-
-    return result.data?.myTimeEntries ?? []
   }
 
   private func convertTimeEntryToRecord(
@@ -312,8 +331,8 @@ class TodayViewModel: ObservableObject {
         print("- Shift ID: \(data.clockIn.shiftId ?? "N/A")")
       }
 
-      // Refresh the shifts list
-      await fetchTodayShifts()
+      // Refresh the shifts list (force refresh since we know data changed)
+      await fetchTodayShifts(useCache: false)
 
     } catch let error as LocationError {
       if case .unauthorized = error {
@@ -379,8 +398,8 @@ class TodayViewModel: ObservableObject {
         // Hours worked will be calculated on the backend
       }
 
-      // Refresh the shifts list
-      await fetchTodayShifts()
+      // Refresh the shifts list (force refresh since we know data changed)
+      await fetchTodayShifts(useCache: false)
 
     } catch let error as LocationError {
       if case .unauthorized = error {
@@ -393,15 +412,5 @@ class TodayViewModel: ObservableObject {
     }
 
     isLoading = false
-  }
-}
-
-// MARK: - Date Extension
-
-extension Date {
-  func toISO8601String() -> String {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return formatter.string(from: self)
   }
 }

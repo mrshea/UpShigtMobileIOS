@@ -121,14 +121,10 @@ class TimeAndEarningsViewModel: ObservableObject {
       // Fetch my shifts from the API
       let query = GetMyShiftsQuery()
 
-      let result = try await withCheckedThrowingContinuation { continuation in
-        apolloClient.fetch(
-          query: query,
-          cachePolicy: .fetchIgnoringCacheData
-        ) { result in
-          continuation.resume(with: result)
-        }
-      }
+      let result = try await apolloClient.fetch(
+        query: query,
+        cachePolicy: .networkOnly
+      )
 
       if let data = result.data {
         // Filter shifts that fall within the week and are in the past
@@ -136,7 +132,10 @@ class TimeAndEarningsViewModel: ObservableObject {
         let calendar = Calendar.current
 
         let completedShifts = data.myShifts.compactMap { myShift -> CompletedShift? in
-          guard let shiftDate = myShift.shift.date.toDate() else {
+          guard let shiftDate = myShift.shift.date.toDate(),
+                let startTime = myShift.shift.startTime.toDate(),
+                let endTime = myShift.shift.endTime.toDate() else {
+            print("Failed to parse dates for shift: \(myShift.id)")
             return nil
           }
 
@@ -151,12 +150,18 @@ class TimeAndEarningsViewModel: ObservableObject {
           
           // Get department name, fallback to "Unknown"
           let departmentName = myShift.shift.department?.name ?? "Unknown"
+          
+          // Format times to HH:mm
+          let timeFormatter = DateFormatter()
+          timeFormatter.dateFormat = "HH:mm"
+          let startTimeString = timeFormatter.string(from: startTime)
+          let endTimeString = timeFormatter.string(from: endTime)
 
           return CompletedShift(
             id: myShift.id,
             date: shiftDate,
-            startTime: myShift.shift.startTime,
-            endTime: myShift.shift.endTime,
+            startTime: startTimeString,
+            endTime: endTimeString,
             role: departmentName,
             hourlyRate: self.currentHourlyRate
           )

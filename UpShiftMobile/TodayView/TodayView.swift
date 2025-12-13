@@ -61,7 +61,7 @@ struct TodayView: View {
       await viewModel.fetchTodayShifts()
     }
     .refreshable {
-      await viewModel.fetchTodayShifts()
+      await viewModel.fetchTodayShifts(useCache: false)
     }
   }
 
@@ -183,7 +183,7 @@ struct TodayView: View {
         .multilineTextAlignment(.center)
 
       Button("Retry") {
-        Task { await viewModel.fetchTodayShifts() }
+        Task { await viewModel.fetchTodayShifts(useCache: false) }
       }
       .buttonStyle(.bordered)
     }

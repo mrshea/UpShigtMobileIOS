@@ -201,7 +201,7 @@ struct AvaliableShifts: View {
           .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let error = viewModel.errorMessage {
           ErrorStateView(error: error) {
-            Task { await loadShifts() }
+            Task { await loadShifts(useCache: false) }
           }
         } else if filteredShifts.isEmpty {
           EmptyStateView()
@@ -238,8 +238,8 @@ struct AvaliableShifts: View {
             .padding()
           }
           .refreshable {
-              await loadShifts()
-              await viewModel.fetchMyShifts()
+              // Force refresh without cache when pulling to refresh
+              await loadShifts(useCache: false)
           }
         }
       }
@@ -261,10 +261,11 @@ struct AvaliableShifts: View {
   
   // MARK: - Helper Methods
   
-  private func loadShifts() async {
+  private func loadShifts(useCache: Bool = true) async {
     let dateRange = selectedDateRange.dateRange(calendar: calendar)
     print("🔄 Loading shifts from \(dateRange.lowerBound) to \(dateRange.upperBound)")
-    await viewModel.fetchShifts(startDate: dateRange.lowerBound, endDate: dateRange.upperBound)
+    await viewModel.fetchShifts(startDate: dateRange.lowerBound, endDate: dateRange.upperBound, useCache: useCache)
+    await viewModel.fetchMyShifts(useCache: useCache)
     print("✅ Loaded \(viewModel.shifts.count) total shifts")
   }
   
@@ -273,9 +274,8 @@ struct AvaliableShifts: View {
       try await viewModel.claimShift(shiftId: shift.id)
       claimedShift = shift
       showClaimedAlert = true
-      // Fetch both available shifts AND claimed shifts to update the UI
-      await loadShifts()
-      await viewModel.fetchMyShifts()
+      // Force refresh without cache since we know data changed
+      await loadShifts(useCache: false)
     } catch {
       viewModel.errorMessage = error.localizedDescription
     }
