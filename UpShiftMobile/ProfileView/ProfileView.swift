@@ -89,11 +89,6 @@ struct ProfileView: View {
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
-
-      // Edit Profile Button (Clerk UserButton)
-      UserButton()
-        .frame(width: 36, height: 36)
-        .padding(.top, 8)
     }
   }
 
@@ -234,7 +229,9 @@ struct ProfileView: View {
   private var accountActionsSection: some View {
     VStack(spacing: 12) {
       Button(action: {
-        // Sign out action handled by Clerk UserButton
+          Task {
+              try? await Clerk.shared.signOut()
+          }
       }) {
         HStack {
           Image(systemName: "rectangle.portrait.and.arrow.right")
