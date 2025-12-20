@@ -110,7 +110,7 @@ struct NaivigatorView: View{
           // Explore Tab
           AvaliableShifts()
             .tabItem {
-              Label("Claim Shifts", systemImage: "magnifyingglass")
+              Label("Shifts", systemImage: "calendar.badge.plus")
             }
             .tag(1)
 

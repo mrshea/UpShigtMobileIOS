@@ -245,6 +245,16 @@ struct AvaliableShifts: View {
       }
       .navigationTitle("Available Shifts")
       .searchable(text: $searchText, prompt: "Search roles")
+      .toolbar {
+        ToolbarItem(placement: .primaryAction) {
+          NavigationLink(destination: TimeOffView()) {
+            HStack(spacing: 4) {
+              Image(systemName: "calendar.badge.clock")
+              Text("Time Off")
+            }
+          }
+        }
+      }
       .alert("Shift Claimed!", isPresented: $showClaimedAlert) {
         Button("OK", role: .cancel) { }
       } message: {
