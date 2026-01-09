@@ -8,19 +8,21 @@
 import SwiftUI
 import HorizonCalendar
 import SwiftUIIntrospect
+
 struct CalendarView: View {
   let calendar: Calendar
   let visibleDateRange: ClosedRange<Date>
   let calendarHeight: CGFloat
   @Binding var selectedDate: Date
   let hasShifts: (Date) -> Bool
+  let shiftsCount: Int // Add this to trigger re-render when shifts change
   
   var body: some View {
     CalendarViewRepresentable(
       calendar: calendar,
       visibleDateRange: visibleDateRange,
       monthsLayout: .vertical(options: VerticalMonthsLayoutOptions()),
-      dataDependency: selectedDate
+      dataDependency: (selectedDate, shiftsCount) // Include shiftsCount to trigger updates
     )
     .days { day in
       dayView(for: day)

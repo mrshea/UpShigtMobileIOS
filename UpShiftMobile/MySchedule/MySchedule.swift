@@ -70,19 +70,34 @@ struct MySchedule: View {
     VStack(spacing: 0) {
       HeaderView(title: "My Schedule")
       Divider()
-      CalendarView(
-          calendar: calendar,
-          visibleDateRange: calendarVisibleDateRange,
-          calendarHeight: calendarHeight,
-          selectedDate: $selectedDate,
-          hasShifts: viewModel.hasClaimedShiftForDate
-        )
+      calendarView
       shiftsContentView
       Spacer()
     }
     .task {
       await loadShifts()
     }
+  }
+
+
+
+//  private var scrollContent: some View {
+//    ScrollView {
+//      VStack(spacing: 16) {
+//        shiftsContentView
+//      }
+//    }
+//  }
+
+  private var calendarView: some View {
+    CalendarView(
+      calendar: calendar,
+      visibleDateRange: calendarVisibleDateRange,
+      calendarHeight: calendarHeight,
+      selectedDate: $selectedDate,
+      hasShifts: viewModel.hasClaimedShiftForDate,
+      shiftsCount: viewModel.myShifts.count // Pass shifts count to trigger re-render
+    )
   }
 
   private var shiftsContentView: some View {
@@ -100,6 +115,10 @@ struct MySchedule: View {
 
       Spacer()
 
+      Button(action: { Task { await forceRefreshShifts() } }) {
+        Image(systemName: "arrow.clockwise")
+          .foregroundStyle(.blue)
+      }
       .disabled(viewModel.isLoading)
     }
   }
@@ -134,6 +153,10 @@ struct MySchedule: View {
         .font(.caption)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
+
+      Button("Retry") {
+        Task { await forceRefreshShifts() }
+      }
       .buttonStyle(.bordered)
     }
     .padding()
@@ -158,6 +181,8 @@ struct MySchedule: View {
                             Task {
                                 do {
                                     try await viewModel.unclaimShift(shiftId: claim.shiftId)
+                                    // Force refresh without cache since we know data changed
+                                    await forceRefreshShifts()
                                 } catch {
                                     viewModel.errorMessage = error.localizedDescription
                                 }
@@ -193,6 +218,10 @@ struct MySchedule: View {
     await viewModel.fetchMyShifts(useCache: useCache)
   }
   
+  // Force refresh without cache
+  private func forceRefreshShifts() async {
+    await loadShifts(useCache: false)
+  }
 }
 
 struct MyShiftCard: View {
