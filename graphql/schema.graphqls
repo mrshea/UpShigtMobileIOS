@@ -90,14 +90,16 @@ type TimeOffRequest {
   id: ID!
   clerkId: String!
   orgId: String!
-  startDate: DateTime!
-  endDate: DateTime!
-  reason: String!
+  startTime: DateTime!
+  endTime: DateTime!
+  employeeNotes: String
+  managerNotes: String
   status: String!
+  submittedDate: DateTime!
+  reviewedDate: DateTime
+  approvedBy: String
   createdAt: DateTime!
   updatedAt: DateTime!
-  reviewedBy: String
-  reviewedAt: DateTime
   employeeName: String
   employeeEmail: String
 }
@@ -143,8 +145,8 @@ type Mutation {
   claimShift(shiftId: ID!): ShiftClaim!
   unclaimShift(shiftId: ID!): Boolean!
   deleteShift(id: ID!): Boolean!
-  createTimeOffRequest(startDate: DateTime!, endDate: DateTime!, reason: String!): TimeOffRequest!
-  updateTimeOffRequestStatus(requestId: ID!, status: String!): TimeOffRequest!
+  createTimeOffRequest(startTime: DateTime!, endTime: DateTime!, employeeNotes: String): TimeOffRequest!
+  updateTimeOffRequestStatus(requestId: ID!, status: String!, managerNotes: String): TimeOffRequest!
   deleteTimeOffRequest(id: ID!): Boolean!
   clockIn(shiftId: ID, latitude: Float, longitude: Float): TimeEntry!
   clockOut(latitude: Float, longitude: Float): TimeEntry!

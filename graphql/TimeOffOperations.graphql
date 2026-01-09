@@ -1,0 +1,41 @@
+# Get all time off requests for the current user
+query GetMyTimeOffRequests {
+  myTimeOffRequests {
+    id
+    startTime
+    endTime
+    status
+    employeeNotes
+    managerNotes
+    submittedDate
+    reviewedDate
+    approvedBy
+    createdAt
+    updatedAt
+  }
+}
+
+# Create a new time off request
+mutation CreateTimeOffRequest(
+  $startTime: DateTime!
+  $endTime: DateTime!
+  $employeeNotes: String
+) {
+  createTimeOffRequest(
+    startTime: $startTime
+    endTime: $endTime
+    employeeNotes: $employeeNotes
+  ) {
+    id
+    startTime
+    endTime
+    employeeNotes
+    status
+    submittedDate
+  }
+}
+
+# Delete a time off request (returns Boolean, no subfields)
+mutation DeleteTimeOffRequest($id: ID!) {
+  deleteTimeOffRequest(id: $id)
+}

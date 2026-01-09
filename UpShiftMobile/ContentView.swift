@@ -107,8 +107,8 @@ struct NaivigatorView: View{
             }
             .tag(0)
           
-          // Explore Tab
-          AvaliableShifts()
+          // Shifts & Time Off Tab
+          ShiftsContainerView()
             .tabItem {
               Label("Shifts", systemImage: "calendar.badge.plus")
             }

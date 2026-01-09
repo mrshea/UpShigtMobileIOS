@@ -27,6 +27,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "Shift": return UpShiftAPI.Objects.Shift
     case "ShiftClaim": return UpShiftAPI.Objects.ShiftClaim
     case "TimeEntry": return UpShiftAPI.Objects.TimeEntry
+    case "TimeOffRequest": return UpShiftAPI.Objects.TimeOffRequest
     default: return nil
     }
   }

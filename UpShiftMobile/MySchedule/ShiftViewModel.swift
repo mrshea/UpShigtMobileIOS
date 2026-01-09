@@ -29,115 +29,124 @@ class ShiftViewModel: ObservableObject {
         }
         errorMessage = nil
         
+        print("🔍 fetchShifts called:")
+        print("  - Start: \(startDate)")
+        print("  - End: \(endDate)")
+        print("  - useCache: \(useCache)")
+        print("  - Current shifts count: \(shifts.count)")
+        
         do {
             let query = GetShiftsQuery(
                 startDate: .some(startDate.iso8601),
                 endDate: .some(endDate.iso8601)
             )
             
-            // Choose fetch strategy based on useCache parameter
+            print("  - Query dates: \(startDate.iso8601) to \(endDate.iso8601)")
+            
+            // Use the CacheAndNetwork policy type for async stream when we want fresh data
             if useCache {
-                // Use cache and network: returns cache first, then network
-                for try await result in try apolloClient.fetch(
-                    query: query,
-                    cachePolicy: .cacheAndNetwork
-                ) {
-                    // Process each result (cache then network)
-                    if let data = result.data {
-                        self.shifts = data.shifts.compactMap { shift -> Shift? in
-                            guard let date = shift.date.toDate(),
-                                  let startTime = shift.startTime.toDate(),
-                                  let endTime = shift.endTime.toDate() else {
-                                print("Failed to parse dates for shift: \(shift.id)")
-                                return nil
-                            }
-                            
-                            let department: Department? = shift.department.map { dept in
-                                Department(
-                                    id: dept.id,
-                                    name: dept.name,
-                                    description: dept.description,
-                                    orgId: dept.orgId
-                                )
-                            }
-                            
-                            return Shift(
-                                id: shift.id,
-                                date: date,
-                                startTime: startTime,
-                                endTime: endTime,
-                                peopleNeeded: shift.peopleNeeded,
-                                departmentId: shift.departmentId,
-                                department: department,
-                                availableSpots: shift.availableSpots,
-                                claimedBy: shift.claimedBy.map { claimedBy in
-                                    ClaimedEmployee(
-                                        id: claimedBy.id,
-                                        clerkId: claimedBy.clerkId,
-                                        employeeName: claimedBy.employeeName,
-                                        employeeEmail: claimedBy.employeeEmail
-                                    )
-                                }
-                            )
-                        }
-                        errorMessage = nil
-                    }
-                }
-            } else {
-                // Network only: skip cache
+                // For cached requests, use SingleResponse cacheFirst
+                let cachePolicy: CachePolicy.Query.SingleResponse = .networkOnly
+                print("  - Using cache policy: \(cachePolicy)")
+                
                 let result = try await apolloClient.fetch(
                     query: query,
-                    cachePolicy: .networkOnly
+                    cachePolicy: cachePolicy
                 )
                 
+                print("  - Got result, data is \(result.data != nil ? "present" : "nil")")
+                
                 if let data = result.data {
-                    self.shifts = data.shifts.compactMap { shift -> Shift? in
-                        guard let date = shift.date.toDate(),
-                              let startTime = shift.startTime.toDate(),
-                              let endTime = shift.endTime.toDate() else {
-                            print("Failed to parse dates for shift: \(shift.id)")
-                            return nil
-                        }
-                        
-                        let department: Department? = shift.department.map { dept in
-                            Department(
-                                id: dept.id,
-                                name: dept.name,
-                                description: dept.description,
-                                orgId: dept.orgId
-                            )
-                        }
-                        
-                        return Shift(
-                            id: shift.id,
-                            date: date,
-                            startTime: startTime,
-                            endTime: endTime,
-                            peopleNeeded: shift.peopleNeeded,
-                            departmentId: shift.departmentId,
-                            department: department,
-                            availableSpots: shift.availableSpots,
-                            claimedBy: shift.claimedBy.map { claimedBy in
-                                ClaimedEmployee(
-                                    id: claimedBy.id,
-                                    clerkId: claimedBy.clerkId,
-                                    employeeName: claimedBy.employeeName,
-                                    employeeEmail: claimedBy.employeeEmail
-                                )
-                            }
-                        )
-                    }
+                    print("  - Raw shifts from API: \(data.shifts.count)")
+                    self.shifts = parseShifts(data.shifts)
                     errorMessage = nil
-                } else {
-                    print(result.errors ?? [])
+                    print("📦 Fetched \(self.shifts.count) shifts (cached)")
                 }
+            } else {
+                // For refresh, use CacheAndNetwork async stream
+                let cachePolicy: CachePolicy.Query.CacheAndNetwork = .cacheAndNetwork
+                print("  - Using cache policy: \(cachePolicy) (async stream)")
+                
+                var latestShifts: [Shift] = []
+                
+                for try await result in try apolloClient.fetch(query: query, cachePolicy: cachePolicy) {
+                    print("  - Got async result, data is \(result.data != nil ? "present" : "nil")")
+                    
+                    if let data = result.data {
+                        print("  - Raw shifts from API: \(data.shifts.count)")
+                        latestShifts = parseShifts(data.shifts)
+                        // Update immediately with each result (cache first, then network)
+                        self.shifts = latestShifts
+                        print("📦 Updated with \(self.shifts.count) shifts from async stream")
+                    }
+                }
+                
+                errorMessage = nil
+                print("📦 Final fetch result: \(self.shifts.count) shifts (refreshed)")
             }
         } catch {
-            errorMessage = error.localizedDescription
-            print("Error fetching shifts: \(error)")
+            // Handle errors
+            let errorDescription = error.localizedDescription
+            let errorString = String(describing: error)
+            
+            print("  - Caught error: \(errorString)")
+            
+            // Check if this is a "no results" type error
+            if errorString.contains("noResults") || 
+               errorDescription.contains("noResults") ||
+               errorDescription.contains("operation completed without returning any results") {
+                // Empty result is valid - clear data and error
+                self.shifts = []
+                errorMessage = nil
+                print("📦 Fetched 0 shifts (empty result from server)")
+            } else {
+                // This is a real error - set error message
+                errorMessage = errorDescription
+                print("❌ Error fetching shifts: \(error)")
+            }
         }
         
         isLoading = false
+    }
+    
+    // Helper to parse shifts (extracted to avoid duplication)
+    private func parseShifts(_ shiftsData: [GetShiftsQuery.Data.Shift]) -> [Shift] {
+        return shiftsData.compactMap { shift -> Shift? in
+            guard let date = shift.date.toDate(),
+                  let startTime = shift.startTime.toDate(),
+                  let endTime = shift.endTime.toDate() else {
+                print("  ⚠️ Failed to parse dates for shift: \(shift.id)")
+                return nil
+            }
+            
+            let department: Department? = shift.department.map { dept in
+                Department(
+                    id: dept.id,
+                    name: dept.name,
+                    description: dept.description,
+                    orgId: dept.orgId
+                )
+            }
+            
+            return Shift(
+                id: shift.id,
+                date: date,
+                startTime: startTime,
+                endTime: endTime,
+                peopleNeeded: shift.peopleNeeded,
+                departmentId: shift.departmentId,
+                department: department,
+                availableSpots: shift.availableSpots,
+                claimedBy: shift.claimedBy.map { claimedBy in
+                    ClaimedEmployee(
+                        id: claimedBy.id,
+                        clerkId: claimedBy.clerkId,
+                        employeeName: claimedBy.employeeName,
+                        employeeEmail: claimedBy.employeeEmail
+                    )
+                }
+            )
+        }
     }
   
   // MARK: - Fetch My Shifts
@@ -149,36 +158,70 @@ class ShiftViewModel: ObservableObject {
     }
     errorMessage = nil
     
+    print("🔍 fetchMyShifts called:")
+    print("  - useCache: \(useCache)")
+    print("  - Current myShifts count: \(myShifts.count)")
+    
     do {
       let query = GetMyShiftsQuery()
       
-      // Choose fetch strategy based on useCache parameter
+      // Use the CacheAndNetwork policy type for async stream when we want fresh data
       if useCache {
-        // Use cache and network: returns cache first, then network
-        for try await result in try apolloClient.fetch(
-          query: query,
-          cachePolicy: .cacheAndNetwork
-        ) {
-          if let data = result.data {
-            self.myShifts = processMyShifts(data.myShifts)
-            errorMessage = nil
-          }
-        }
-      } else {
-        // Network only: skip cache
+        // For cached requests, use SingleResponse cacheFirst
+        let cachePolicy: CachePolicy.Query.SingleResponse = .cacheFirst
+        print("  - Using cache policy: \(cachePolicy)")
+        
         let result = try await apolloClient.fetch(
           query: query,
-          cachePolicy: .networkOnly
+          cachePolicy: cachePolicy
         )
         
+        print("  - Got result, data is \(result.data != nil ? "present" : "nil")")
+        
         if let data = result.data {
+          print("  - Raw my shifts from API: \(data.myShifts.count)")
           self.myShifts = processMyShifts(data.myShifts)
           errorMessage = nil
+          print("📦 Fetched \(self.myShifts.count) my shifts (cached)")
         }
+      } else {
+        // For refresh, use CacheAndNetwork async stream
+        let cachePolicy: CachePolicy.Query.CacheAndNetwork = .cacheAndNetwork
+        print("  - Using cache policy: \(cachePolicy) (async stream)")
+        
+        for try await result in try apolloClient.fetch(query: query, cachePolicy: cachePolicy) {
+          print("  - Got async result, data is \(result.data != nil ? "present" : "nil")")
+          
+          if let data = result.data {
+            print("  - Raw my shifts from API: \(data.myShifts.count)")
+            self.myShifts = processMyShifts(data.myShifts)
+            print("📦 Updated with \(self.myShifts.count) my shifts from async stream")
+          }
+        }
+        
+        errorMessage = nil
+        print("📦 Final fetch result: \(self.myShifts.count) my shifts (refreshed)")
       }
     } catch {
-      errorMessage = error.localizedDescription
-      print("Error fetching my shifts: \(error)")
+      // Handle errors
+      let errorDescription = error.localizedDescription
+      let errorString = String(describing: error)
+      
+      print("  - Caught error: \(errorString)")
+      
+      // Check if this is a "no results" type error
+      if errorString.contains("noResults") || 
+         errorDescription.contains("noResults") ||
+         errorDescription.contains("operation completed without returning any results") {
+        // Empty result is valid - clear data and error
+        self.myShifts = []
+        errorMessage = nil
+        print("📦 Fetched 0 my shifts (empty result from server)")
+      } else {
+        // This is a real error - set error message
+        errorMessage = errorDescription
+        print("❌ Error fetching my shifts: \(error)")
+      }
     }
     
     isLoading = false

@@ -12,10 +12,12 @@
 		5B3BC6002EEA47EA00B1BAE2 /* GetMyShifts.graphql in Resources */ = {isa = PBXBuildFile; fileRef = 5B3BC5D92EEA47EA00B1BAE2 /* GetMyShifts.graphql */; };
 		5B3BC6012EEA47EA00B1BAE2 /* GetShifts.graphql in Resources */ = {isa = PBXBuildFile; fileRef = 5B3BC5DA2EEA47EA00B1BAE2 /* GetShifts.graphql */; };
 		5B3BC6022EEA47EA00B1BAE2 /* UnclaimShift.graphql in Resources */ = {isa = PBXBuildFile; fileRef = 5B3BC5DE2EEA47EA00B1BAE2 /* UnclaimShift.graphql */; };
+		5B7118362EF7780B007954A3 /* TIME_OFF_API_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = 5B7118352EF7780B007954A3 /* TIME_OFF_API_SETUP.md */; };
+		5B71183C2EF9B9EB007954A3 /* TIME_OFF_SCHEMA_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 5B71183B2EF9B9EB007954A3 /* TIME_OFF_SCHEMA_FIX.md */; };
+		5B7118402EF9BD8A007954A3 /* TimeOffOperations.graphql in Resources */ = {isa = PBXBuildFile; fileRef = 5B71183F2EF9BD8A007954A3 /* TimeOffOperations.graphql */; };
 		5BAA26582ED795FF00205CF2 /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = 5BAA26572ED795FF00205CF2 /* Clerk */; };
 		5BAA26A82EDA366800205CF2 /* Apollo in Frameworks */ = {isa = PBXBuildFile; productRef = 5BAA26A72EDA366800205CF2 /* Apollo */; };
 		5BAA26AA2EDA366800205CF2 /* ApolloWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = 5BAA26A92EDA366800205CF2 /* ApolloWebSocket */; };
-		5BAA26AC2EDA379600205CF2 /* apollo-codegen-config.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BAA26AB2EDA379600205CF2 /* apollo-codegen-config.json */; };
 		5BAA26AF2EDA380F00205CF2 /* schema.graphqls in Resources */ = {isa = PBXBuildFile; fileRef = 5BAA26AD2EDA380F00205CF2 /* schema.graphqls */; };
 		5BAA26B62EDA39DF00205CF2 /* apollo-codegen-config.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 5BAA26B52EDA39DF00205CF2 /* apollo-codegen-config.yaml */; };
 		5BAA26B92EDA3B2400205CF2 /* UpShiftAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 5BAA26B82EDA3B2400205CF2 /* UpShiftAPI */; };
@@ -46,10 +48,12 @@
 		5B3BC5D92EEA47EA00B1BAE2 /* GetMyShifts.graphql */ = {isa = PBXFileReference; lastKnownFileType = text; path = GetMyShifts.graphql; sourceTree = "<group>"; };
 		5B3BC5DA2EEA47EA00B1BAE2 /* GetShifts.graphql */ = {isa = PBXFileReference; lastKnownFileType = text; path = GetShifts.graphql; sourceTree = "<group>"; };
 		5B3BC5DE2EEA47EA00B1BAE2 /* UnclaimShift.graphql */ = {isa = PBXFileReference; lastKnownFileType = text; path = UnclaimShift.graphql; sourceTree = "<group>"; };
+		5B7118352EF7780B007954A3 /* TIME_OFF_API_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TIME_OFF_API_SETUP.md; sourceTree = "<group>"; };
+		5B71183B2EF9B9EB007954A3 /* TIME_OFF_SCHEMA_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TIME_OFF_SCHEMA_FIX.md; sourceTree = "<group>"; };
+		5B71183F2EF9BD8A007954A3 /* TimeOffOperations.graphql */ = {isa = PBXFileReference; lastKnownFileType = text; path = TimeOffOperations.graphql; sourceTree = "<group>"; };
 		5BAA26292ED790A200205CF2 /* UpShiftMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UpShiftMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5BAA26382ED790A300205CF2 /* UpShiftMobileTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UpShiftMobileTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5BAA26422ED790A300205CF2 /* UpShiftMobileUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UpShiftMobileUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		5BAA26AB2EDA379600205CF2 /* apollo-codegen-config.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "apollo-codegen-config.json"; sourceTree = "<group>"; };
 		5BAA26AD2EDA380F00205CF2 /* schema.graphqls */ = {isa = PBXFileReference; lastKnownFileType = text; path = schema.graphqls; sourceTree = "<group>"; };
 		5BAA26B52EDA39DF00205CF2 /* apollo-codegen-config.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "apollo-codegen-config.yaml"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -112,12 +116,13 @@
 			isa = PBXGroup;
 			children = (
 				5BAA26BB2EDA3B7E00205CF2 /* ApolloTest */,
-				5BAA26AB2EDA379600205CF2 /* apollo-codegen-config.json */,
 				5BAA26AE2EDA380F00205CF2 /* graphql */,
 				5BAA262B2ED790A200205CF2 /* UpShiftMobile */,
 				5BAA263B2ED790A300205CF2 /* UpShiftMobileTests */,
 				5BAA26452ED790A300205CF2 /* UpShiftMobileUITests */,
 				5BAA262A2ED790A200205CF2 /* Products */,
+				5B7118352EF7780B007954A3 /* TIME_OFF_API_SETUP.md */,
+				5B71183B2EF9B9EB007954A3 /* TIME_OFF_SCHEMA_FIX.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -141,6 +146,7 @@
 				5B3BC5DE2EEA47EA00B1BAE2 /* UnclaimShift.graphql */,
 				5B3BC5DA2EEA47EA00B1BAE2 /* GetShifts.graphql */,
 				5BAA26B52EDA39DF00205CF2 /* apollo-codegen-config.yaml */,
+				5B71183F2EF9BD8A007954A3 /* TimeOffOperations.graphql */,
 			);
 			path = graphql;
 			sourceTree = "<group>";
@@ -279,12 +285,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5BAA26AC2EDA379600205CF2 /* apollo-codegen-config.json in Resources */,
 				5B3BC5CF2EEA437E00B1BAE2 /* TimeEntry.graphql in Resources */,
 				5B3BC5FF2EEA47EA00B1BAE2 /* ClaimShift.graphql in Resources */,
+				5B71183C2EF9B9EB007954A3 /* TIME_OFF_SCHEMA_FIX.md in Resources */,
 				5B3BC6002EEA47EA00B1BAE2 /* GetMyShifts.graphql in Resources */,
 				5B3BC6012EEA47EA00B1BAE2 /* GetShifts.graphql in Resources */,
+				5B7118362EF7780B007954A3 /* TIME_OFF_API_SETUP.md in Resources */,
 				5B3BC6022EEA47EA00B1BAE2 /* UnclaimShift.graphql in Resources */,
+				5B7118402EF9BD8A007954A3 /* TimeOffOperations.graphql in Resources */,
 				5BAA26AF2EDA380F00205CF2 /* schema.graphqls in Resources */,
 				5BAA26B62EDA39DF00205CF2 /* apollo-codegen-config.yaml in Resources */,
 			);

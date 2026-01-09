@@ -3,7 +3,6 @@ import SwiftUI
 struct AvaliableShifts: View {
   @StateObject private var viewModel = ShiftViewModel()
   @State private var selectedRole: String = "All"
-  @State private var searchText = ""
   @State private var showClaimedAlert = false
   @State private var claimedShift: Shift?
   @State private var selectedDateRange: DateRange = .thisWeek
@@ -56,17 +55,13 @@ struct AvaliableShifts: View {
       // Filter by role
       let matchesRole = selectedRole == "All" || shift.role == selectedRole
       
-      // Filter by search
-      let matchesSearch = searchText.isEmpty || 
-        shift.role.localizedCaseInsensitiveContains(searchText)
-      
       // Filter out full shifts
       let notFull = !shift.isFull
       
       // Filter out shifts the user has already claimed
       let notAlreadyClaimed = !claimedShiftIds.contains(shift.id)
       
-      return matchesRole && matchesSearch && notFull && notAlreadyClaimed
+      return matchesRole && notFull && notAlreadyClaimed
     }
   }
   
@@ -126,147 +121,153 @@ struct AvaliableShifts: View {
   }
   
   var body: some View {
-    NavigationStack {
-      VStack(spacing: 0) {
-        // Date Range Filter
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: 12) {
-            ForEach(DateRange.allCases, id: \.self) { range in
-              FilterChip(
-                title: range.rawValue,
-                isSelected: selectedDateRange == range
-              ) {
-                withAnimation {
-                  selectedDateRange = range
-                  Task {
-                    await loadShifts()
-                  }
-                }
-              }
-            }
-          }
-          .padding(.horizontal)
-          .padding(.vertical, 12)
-        }
-        .background(Color(.systemBackground))
-        
-        // Date Range Display
-        HStack {
-          Image(systemName: "calendar")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-          
-          Text(dateRangeText)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemGroupedBackground))
-        
-        Divider()
-        
-        // Role Filter
-        if !availableRoles.isEmpty && availableRoles.count > 2 {
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-              ForEach(availableRoles, id: \.self) { role in
-                FilterChip(
-                  title: role,
-                  isSelected: selectedRole == role
-                ) {
-                  withAnimation {
-                    selectedRole = role
-                  }
-                }
-              }
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
-          }
-          .background(Color(.systemBackground))
-          
-          Divider()
-        }
-        
-        // Content
-        if viewModel.isLoading {
-          VStack(spacing: 16) {
-            ProgressView()
-            Text("Loading available shifts...")
-              .font(.subheadline)
-              .foregroundStyle(.secondary)
-          }
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if let error = viewModel.errorMessage {
-          ErrorStateView(error: error) {
-            Task { await loadShifts(useCache: false) }
-          }
-        } else if filteredShifts.isEmpty {
-          EmptyStateView()
-        } else {
-          ScrollView {
-            LazyVStack(spacing: 24, pinnedViews: [.sectionHeaders]) {
-              ForEach(groupedShifts, id: \.date) { dateGroup in
-                Section {
-                  ForEach(dateGroup.shifts) { shift in
-                    AvailableShiftCard(shift: shift) {
-                      Task {
-                        await claimShift(shift)
-                      }
-                    }
-                  }
-                } header: {
-                  HStack {
-                    Text(dateGroup.date, style: .date)
-                      .font(.headline)
-                      .foregroundStyle(.primary)
-                    
-                    Spacer()
-                    
-                    Text("\(dateGroup.shifts.count) shift\(dateGroup.shifts.count == 1 ? "" : "s")")
-                      .font(.subheadline)
-                      .foregroundStyle(.secondary)
-                  }
-                  .padding(.horizontal)
-                  .padding(.vertical, 8)
-                  .background(Color(.systemBackground))
-                }
-              }
-            }
-            .padding()
-          }
-          .refreshable {
-              // Force refresh without cache when pulling to refresh
-              await loadShifts(useCache: false)
-          }
-        }
-      }
-      .navigationTitle("Available Shifts")
-      .searchable(text: $searchText, prompt: "Search roles")
-      .toolbar {
-        ToolbarItem(placement: .primaryAction) {
-          NavigationLink(destination: TimeOffView()) {
-            HStack(spacing: 4) {
-              Image(systemName: "calendar.badge.clock")
-              Text("Time Off")
-            }
-          }
-        }
-      }
-      .alert("Shift Claimed!", isPresented: $showClaimedAlert) {
-        Button("OK", role: .cancel) { }
-      } message: {
-        if let shift = claimedShift {
-          Text("You've successfully claimed the \(shift.role) shift on \(shift.date.formatted(date: .abbreviated, time: .omitted))")
-        }
-      }
-      .task {
-        await loadShifts()
-        await viewModel.fetchMyShifts()
+    VStack(spacing: 0) {
+      dateRangeFilter
+      dateRangeDisplay
+      Divider()
+      roleFilter
+      mainContent
+    }
+    .alert("Shift Claimed!", isPresented: $showClaimedAlert) {
+      Button("OK", role: .cancel) { }
+    } message: {
+      if let shift = claimedShift {
+        Text("You've successfully claimed the \(shift.role) shift on \(shift.date.formatted(date: .abbreviated, time: .omitted))")
       }
     }
+    .task {
+      await loadShifts()
+      await viewModel.fetchMyShifts()
+    }
+  }
+
+  // MARK: - View Components
+
+  private var dateRangeFilter: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: 12) {
+        ForEach(DateRange.allCases, id: \.self) { range in
+          FilterChip(
+            title: range.rawValue,
+            isSelected: selectedDateRange == range
+          ) {
+            withAnimation {
+              selectedDateRange = range
+              Task {
+                await loadShifts()
+              }
+            }
+          }
+        }
+      }
+      .padding(.horizontal)
+      .padding(.vertical, 12)
+    }
+    .background(Color(.systemBackground))
+  }
+
+  private var dateRangeDisplay: some View {
+    HStack {
+      Image(systemName: "calendar")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+
+      Text(dateRangeText)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+    .padding(.horizontal)
+    .padding(.vertical, 8)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(Color(.systemGroupedBackground))
+  }
+
+  @ViewBuilder
+  private var roleFilter: some View {
+    if !availableRoles.isEmpty && availableRoles.count > 2 {
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: 12) {
+          ForEach(availableRoles, id: \.self) { role in
+            FilterChip(
+              title: role,
+              isSelected: selectedRole == role
+            ) {
+              withAnimation {
+                selectedRole = role
+              }
+            }
+          }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 12)
+      }
+      .background(Color(.systemBackground))
+
+      Divider()
+    }
+  }
+
+  @ViewBuilder
+  private var mainContent: some View {
+    if viewModel.isLoading {
+      loadingView
+    } else if let error = viewModel.errorMessage {
+      ErrorStateView(error: error) {
+        Task { await loadShifts(useCache: false) }
+      }
+    } else if filteredShifts.isEmpty {
+      EmptyStateView()
+    } else {
+      shiftsListView
+    }
+  }
+
+  private var loadingView: some View {
+    VStack(spacing: 16) {
+      ProgressView()
+      Text("Loading available shifts...")
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  private var shiftsListView: some View {
+    ScrollView {
+      LazyVStack(spacing: 24, pinnedViews: [.sectionHeaders]) {
+        ForEach(groupedShifts, id: \.date) { dateGroup in
+          Section {
+            ForEach(dateGroup.shifts) { shift in
+              AvailableShiftCard(shift: shift) {
+                Task {
+                  await claimShift(shift)
+                }
+              }
+            }
+          } header: {
+            shiftSectionHeader(for: dateGroup)
+          }
+        }
+      }
+      .padding()
+    }
+  }
+
+  private func shiftSectionHeader(for dateGroup: (date: Date, shifts: [Shift])) -> some View {
+    HStack {
+      Text(dateGroup.date, style: .date)
+        .font(.headline)
+        .foregroundStyle(.primary)
+
+      Spacer()
+
+      Text("\(dateGroup.shifts.count) shift\(dateGroup.shifts.count == 1 ? "" : "s")")
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+    }
+    .padding(.horizontal)
+    .padding(.vertical, 8)
+    .background(Color(.systemBackground))
   }
   
   // MARK: - Helper Methods
@@ -479,6 +480,7 @@ struct ErrorStateView: View {
         .padding(.horizontal)
       
       Button("Retry") {
+        print(error)
         onRetry()
       }
       .buttonStyle(.borderedProminent)

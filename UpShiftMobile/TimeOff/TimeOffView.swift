@@ -77,7 +77,7 @@ struct TimeOffView: View {
   }
   
   var body: some View {
-    NavigationStack {
+    ZStack(alignment: .bottomTrailing) {
       VStack(spacing: 0) {
         // Stats Section
         statsSection
@@ -102,25 +102,30 @@ struct TimeOffView: View {
           requestsListView
         }
       }
-      .navigationTitle("Time Off")
-      .toolbar {
-        ToolbarItem(placement: .primaryAction) {
-          Button(action: { showNewRequestSheet = true }) {
-            Image(systemName: "plus")
-          }
-        }
+      
+      // Floating Action Button
+      Button(action: { showNewRequestSheet = true }) {
+        Image(systemName: "plus")
+          .font(.title2)
+          .fontWeight(.semibold)
+          .foregroundStyle(.white)
+          .frame(width: 56, height: 56)
+          .background(Color.blue)
+          .clipShape(Circle())
+          .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
       }
-      .sheet(isPresented: $showNewRequestSheet) {
-        NewTimeOffRequestView { request in
-          await viewModel.submitRequest(request)
-        }
+      .padding(20)
+    }
+    .sheet(isPresented: $showNewRequestSheet) {
+      TimeOffRequestView { request in
+        await viewModel.submitRequest(request)
       }
-      .task {
-        await viewModel.loadRequests()
-      }
-      .refreshable {
-        await viewModel.loadRequests(useCache: false)
-      }
+    }
+    .task {
+      await viewModel.loadRequests()
+    }
+    .refreshable {
+      await viewModel.loadRequests(useCache: false)
     }
   }
   
@@ -467,215 +472,8 @@ struct TimeOffRequestDetailView: View {
   }
 }
 
-// MARK: - New Time Off Request View
-struct NewTimeOffRequestView: View {
-  @Environment(\.dismiss) private var dismiss
-  @State private var startDate = Date()
-  @State private var endDate = Date()
-  @State private var reason = ""
-  @State private var isSubmitting = false
-  
-  let onSubmit: (TimeOffRequest) async -> Void
-  
-  var body: some View {
-    NavigationStack {
-      Form {
-        Section {
-          DatePicker("Start Date", selection: $startDate, displayedComponents: [.date])
-          DatePicker("End Date", selection: $endDate, displayedComponents: [.date])
-        } header: {
-          Text("Time Off Period")
-        } footer: {
-          if isValidDateRange {
-            Text("\(daysCount) day\(daysCount == 1 ? "" : "s") requested")
-          }
-        }
-        
-        Section {
-          TextField("Reason (optional)", text: $reason, axis: .vertical)
-            .lineLimit(3...6)
-        } header: {
-          Text("Details")
-        }
-        
-        Section {
-          Button(action: submitRequest) {
-            if isSubmitting {
-              HStack {
-                Spacer()
-                ProgressView()
-                  .tint(.white)
-                Spacer()
-              }
-            } else {
-              HStack {
-                Spacer()
-                Text("Submit Request")
-                  .fontWeight(.semibold)
-                Spacer()
-              }
-            }
-          }
-          .disabled(isSubmitting || !isValidDateRange)
-          .listRowBackground(
-            isValidDateRange && !isSubmitting ? Color.blue : Color.gray.opacity(0.5)
-          )
-          .foregroundStyle(.white)
-        }
-        
-        if !isValidDateRange {
-          Section {
-            HStack {
-              Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-              Text("End date must be on or after start date")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-          }
-        }
-      }
-      .navigationTitle("Request Time Off")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-        }
-      }
-    }
-  }
-  
-  // MARK: - Computed Properties
-  
-  private var isValidDateRange: Bool {
-    endDate >= startDate
-  }
-  
-  private var daysCount: Int {
-    let calendar = Calendar.current
-    let days = calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 0
-    return days + 1
-  }
-  
-  // MARK: - Methods
-  
-  private func submitRequest() {
-    isSubmitting = true
-    
-    Task {
-      // Create request object
-      let request = TimeOffRequest(
-        id: UUID().uuidString,
-        startDate: startDate,
-        endDate: endDate,
-        reason: reason.isEmpty ? nil : reason,
-        status: .pending,
-        submittedAt: Date(),
-        reviewedAt: nil,
-        reviewedBy: nil,
-        reviewNotes: nil
-      )
-      
-      await onSubmit(request)
-      
-      await MainActor.run {
-        isSubmitting = false
-        dismiss()
-      }
-    }
-  }
-}
-
 // MARK: - Time Off View Model
-@MainActor
-class TimeOffViewModel: ObservableObject {
-  @Published var requests: [TimeOffRequest] = []
-  @Published var isLoading = false
-  @Published var errorMessage: String?
-  
-  var pendingCount: Int {
-    requests.filter { $0.status == .pending }.count
-  }
-  
-  var approvedCount: Int {
-    requests.filter { $0.status == .approved }.count
-  }
-  
-  var upcomingDaysOff: Int {
-    let now = Date()
-    return requests
-      .filter { $0.status == .approved && $0.startDate >= now }
-      .reduce(0) { $0 + $1.daysCount }
-  }
-  
-  func loadRequests(useCache: Bool = true) async {
-    isLoading = true
-    errorMessage = nil
-    
-    do {
-      // TODO: Replace with actual API call
-      // Simulate network delay
-      try await Task.sleep(nanoseconds: 1_000_000_000)
-      
-      // Mock data for demonstration
-      requests = [
-        TimeOffRequest(
-          id: "1",
-          startDate: Calendar.current.date(byAdding: .day, value: 10, to: Date())!,
-          endDate: Calendar.current.date(byAdding: .day, value: 12, to: Date())!,
-          reason: "Family vacation",
-          status: .approved,
-          submittedAt: Calendar.current.date(byAdding: .day, value: -5, to: Date())!,
-          reviewedAt: Calendar.current.date(byAdding: .day, value: -3, to: Date())!,
-          reviewedBy: "Manager Name",
-          reviewNotes: "Approved. Enjoy your time off!"
-        ),
-        TimeOffRequest(
-          id: "2",
-          startDate: Calendar.current.date(byAdding: .day, value: 30, to: Date())!,
-          endDate: Calendar.current.date(byAdding: .day, value: 30, to: Date())!,
-          reason: "Doctor's appointment",
-          status: .pending,
-          submittedAt: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
-          reviewedAt: nil,
-          reviewedBy: nil,
-          reviewNotes: nil
-        ),
-        TimeOffRequest(
-          id: "3",
-          startDate: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
-          endDate: Calendar.current.date(byAdding: .day, value: -8, to: Date())!,
-          reason: "Personal day",
-          status: .denied,
-          submittedAt: Calendar.current.date(byAdding: .day, value: -15, to: Date())!,
-          reviewedAt: Calendar.current.date(byAdding: .day, value: -12, to: Date())!,
-          reviewedBy: "Manager Name",
-          reviewNotes: "Sorry, we're short-staffed during that period."
-        )
-      ]
-      
-      isLoading = false
-    } catch {
-      errorMessage = error.localizedDescription
-      isLoading = false
-    }
-  }
-  
-  func submitRequest(_ request: TimeOffRequest) async {
-    do {
-      // TODO: Replace with actual API call
-      // Simulate network delay
-      try await Task.sleep(nanoseconds: 1_500_000_000)
-      
-      // Add to local array
-      requests.insert(request, at: 0)
-    } catch {
-      errorMessage = error.localizedDescription
-    }
-  }
-}
+// Moved to TimeOffViewModel.swift
 
 #Preview {
   TimeOffView()
