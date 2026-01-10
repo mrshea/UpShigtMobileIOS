@@ -253,6 +253,9 @@ struct AvaliableShifts: View {
       }
       .padding()
     }
+    .refreshable {
+      await refreshShifts()
+    }
   }
 
   private func shiftSectionHeader(for dateGroup: (date: Date, shifts: [Shift])) -> some View {
@@ -291,6 +294,19 @@ struct AvaliableShifts: View {
       await loadShifts(useCache: false)
     } catch {
       viewModel.errorMessage = error.localizedDescription
+    }
+  }
+
+  private func refreshShifts() async {
+    let dateRange = selectedDateRange.dateRange(calendar: calendar)
+
+    // Use the new throttled refresh methods
+    await viewModel.refreshShifts(startDate: dateRange.lowerBound, endDate: dateRange.upperBound)
+    await viewModel.refreshMyShifts()
+
+    // Haptic feedback on successful refresh
+    if viewModel.errorMessage == nil {
+      HapticManager.shared.notification(type: .success)
     }
   }
 }

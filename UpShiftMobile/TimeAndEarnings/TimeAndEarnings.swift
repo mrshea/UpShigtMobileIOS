@@ -403,13 +403,3 @@ struct CompletedShiftCard: View {
     return formatter.string(from: shift.date)
   }
 }
-
-// MARK: - Date Extension
-
-extension Date {
-  var startOfWeek: Date {
-    let calendar = Calendar.current
-    let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: self)
-    return calendar.date(from: components) ?? self
-  }
-}

@@ -167,7 +167,7 @@ struct MySchedule: View {
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
-                    
+
                     ForEach(myShiftsToday) { claim in
                         MyShiftCard(claim: claim) {
                             Task {
@@ -181,7 +181,7 @@ struct MySchedule: View {
                     }
                 }
             }
-            
+
             if myShiftsToday.isEmpty {
                 Text("No shifts scheduled")
                     .foregroundStyle(.secondary)
@@ -191,6 +191,9 @@ struct MySchedule: View {
                     .cornerRadius(10)
             }
         }
+        .refreshable {
+            await refreshShifts()
+        }
     }
   
   // MARK: - Helper Methods
@@ -199,13 +202,31 @@ struct MySchedule: View {
     guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: selectedDate) else {
       return
     }
-    
+
     let startDate = weekInterval.start
     let endDate = calendar.date(byAdding: .day, value: 7, to: startDate) ?? weekInterval.end
-    
+
     // Fetch shifts with caching - will show cached data first, then update with fresh data
     await viewModel.fetchShifts(startDate: startDate, endDate: endDate, useCache: useCache)
     await viewModel.fetchMyShifts(useCache: useCache)
+  }
+
+  private func refreshShifts() async {
+    guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: selectedDate) else {
+      return
+    }
+
+    let startDate = weekInterval.start
+    let endDate = calendar.date(byAdding: .day, value: 7, to: startDate) ?? weekInterval.end
+
+    // Use the new throttled refresh methods
+    await viewModel.refreshShifts(startDate: startDate, endDate: endDate)
+    await viewModel.refreshMyShifts()
+
+    // Haptic feedback on successful refresh
+    if viewModel.errorMessage == nil {
+      HapticManager.shared.notification(type: .success)
+    }
   }
 }
 
