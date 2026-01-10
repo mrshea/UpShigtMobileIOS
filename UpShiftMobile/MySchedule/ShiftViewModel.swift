@@ -115,7 +115,7 @@ class ShiftViewModel: ObservableObject {
             guard let date = shift.date.toDate(),
                   let startTime = shift.startTime.toDate(),
                   let endTime = shift.endTime.toDate() else {
-                print("  ⚠️ Failed to parse dates for shift: \(shift.id)")
+                print("⚠️ Failed to parse dates for shift: \(shift.id)")
                 return nil
             }
             

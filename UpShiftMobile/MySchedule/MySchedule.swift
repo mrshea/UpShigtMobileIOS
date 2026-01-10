@@ -114,11 +114,6 @@ struct MySchedule: View {
         .font(.headline)
 
       Spacer()
-
-      Button(action: { Task { await forceRefreshShifts() } }) {
-        Image(systemName: "arrow.clockwise")
-          .foregroundStyle(.blue)
-      }
       .disabled(viewModel.isLoading)
     }
   }
@@ -154,9 +149,6 @@ struct MySchedule: View {
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
 
-      Button("Retry") {
-        Task { await forceRefreshShifts() }
-      }
       .buttonStyle(.bordered)
     }
     .padding()
@@ -181,8 +173,6 @@ struct MySchedule: View {
                             Task {
                                 do {
                                     try await viewModel.unclaimShift(shiftId: claim.shiftId)
-                                    // Force refresh without cache since we know data changed
-                                    await forceRefreshShifts()
                                 } catch {
                                     viewModel.errorMessage = error.localizedDescription
                                 }
@@ -216,11 +206,6 @@ struct MySchedule: View {
     // Fetch shifts with caching - will show cached data first, then update with fresh data
     await viewModel.fetchShifts(startDate: startDate, endDate: endDate, useCache: useCache)
     await viewModel.fetchMyShifts(useCache: useCache)
-  }
-  
-  // Force refresh without cache
-  private func forceRefreshShifts() async {
-    await loadShifts(useCache: false)
   }
 }
 

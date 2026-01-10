@@ -57,11 +57,13 @@ struct AvaliableShifts: View {
       
       // Filter out full shifts
       let notFull = !shift.isFull
+        
+      let inFuture = shift.date > Date()
       
       // Filter out shifts the user has already claimed
       let notAlreadyClaimed = !claimedShiftIds.contains(shift.id)
       
-      return matchesRole && notFull && notAlreadyClaimed
+      return matchesRole && notFull && notAlreadyClaimed && inFuture
     }
   }
   
