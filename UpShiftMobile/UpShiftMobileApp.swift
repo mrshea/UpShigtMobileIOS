@@ -11,6 +11,7 @@ import Clerk
 
 @main
 struct ClerkQuickstartApp: App {
+  @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
   @State private var clerk = Clerk.shared
 
   var body: some Scene {

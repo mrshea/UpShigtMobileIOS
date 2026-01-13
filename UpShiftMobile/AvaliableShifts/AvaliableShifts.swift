@@ -217,10 +217,17 @@ struct AvaliableShifts: View {
       ErrorStateView(error: error) {
         Task { await loadShifts(useCache: false) }
       }
-    } else if filteredShifts.isEmpty {
-      EmptyStateView()
-    } else {
-      shiftsListView
+    } else{
+        ScrollView{
+            if filteredShifts.isEmpty {
+              EmptyStateView()
+            } else {
+              shiftsListView
+            }
+        }
+        .refreshable {
+          await refreshShifts()
+        }
     }
   }
 
@@ -235,7 +242,6 @@ struct AvaliableShifts: View {
   }
 
   private var shiftsListView: some View {
-    ScrollView {
       LazyVStack(spacing: 24, pinnedViews: [.sectionHeaders]) {
         ForEach(groupedShifts, id: \.date) { dateGroup in
           Section {
@@ -252,10 +258,6 @@ struct AvaliableShifts: View {
         }
       }
       .padding()
-    }
-    .refreshable {
-      await refreshShifts()
-    }
   }
 
   private func shiftSectionHeader(for dateGroup: (date: Date, shifts: [Shift])) -> some View {

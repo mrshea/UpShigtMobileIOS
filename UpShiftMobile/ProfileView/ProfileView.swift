@@ -146,7 +146,7 @@ struct ProfileView: View {
         .padding(.horizontal, 4)
 
       VStack(spacing: 0) {
-        NavigationLink(destination: Text("Notifications Settings")) {
+        NavigationLink(destination: NotificationSettingsView()) {
           ProfileActionRow(
             icon: "bell.fill",
             title: "Notifications",

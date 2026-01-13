@@ -1,0 +1,43 @@
+# GraphQL Operations for Device Tokens
+
+## Register Device Token
+mutation RegisterDeviceToken($token: String!, $platform: Platform!) {
+  registerDeviceToken(token: $token, platform: $platform) {
+    success
+    message
+    deviceToken {
+      id
+      platform
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+## Get My Device Tokens
+query GetMyDeviceTokens {
+  myDeviceTokens {
+    id
+    platform
+    isActive
+    createdAt
+    updatedAt
+  }
+}
+
+## Deactivate Specific Device Token
+mutation DeactivateDeviceToken($token: String!) {
+  deactivateDeviceToken(token: $token) {
+    success
+    message
+  }
+}
+
+## Deactivate All Device Tokens
+mutation DeactivateAllDeviceTokens {
+  deactivateAllDeviceTokens {
+    success
+    message
+  }
+}

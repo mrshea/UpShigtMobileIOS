@@ -9,8 +9,8 @@ class Network {
 
     private(set) lazy var apollo: ApolloClient = {
 //        let url = URL(string: "http://192.168.1.82:3000/api/graphql")!
-//        let url = URL(string: "https://upshiftbackend.vercel.app/api/graphql")!
-        let url = URL(string: "http://192.168.1.193:3000/api/graphql")!
+        let url = URL(string: "https://upshiftbackend.vercel.app/api/graphql")!
+//        let url = URL(string: "http://192.168.1.193:3000/api/graphql")!
         
         // Create the network transport with the authorization interceptor
         let provider = NetworkInterceptorProvider()

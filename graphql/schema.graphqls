@@ -128,6 +128,26 @@ type ClockStatus {
   activeEntry: TimeEntry
 }
 
+enum Platform {
+  IOS
+  ANDROID
+}
+
+type DeviceToken {
+  id: ID!
+  clerkId: String!
+  platform: Platform!
+  isActive: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type DeviceTokenResponse {
+  success: Boolean!
+  message: String
+  deviceToken: DeviceToken
+}
+
 type Query {
   me: User
   shifts(startDate: DateTime, endDate: DateTime): [Shift!]!
@@ -138,6 +158,7 @@ type Query {
   timeEntries(isAdmin: Boolean!, employeeId: String, startDate: DateTime, endDate: DateTime): [TimeEntry!]!
   myTimeEntries(startDate: DateTime, endDate: DateTime): [TimeEntry!]!
   clockStatus: ClockStatus!
+  myDeviceTokens: [DeviceToken!]!
 }
 
 type Mutation {
@@ -150,4 +171,7 @@ type Mutation {
   deleteTimeOffRequest(id: ID!): Boolean!
   clockIn(shiftId: ID, latitude: Float, longitude: Float): TimeEntry!
   clockOut(latitude: Float, longitude: Float): TimeEntry!
+  registerDeviceToken(token: String!, platform: Platform!): DeviceTokenResponse!
+  deactivateDeviceToken(token: String!): DeviceTokenResponse!
+  deactivateAllDeviceTokens: DeviceTokenResponse!
 }

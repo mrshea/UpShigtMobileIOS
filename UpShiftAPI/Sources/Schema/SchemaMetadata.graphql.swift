@@ -22,6 +22,8 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     switch typename {
     case "ClockStatus": return UpShiftAPI.Objects.ClockStatus
     case "Department": return UpShiftAPI.Objects.Department
+    case "DeviceToken": return UpShiftAPI.Objects.DeviceToken
+    case "DeviceTokenResponse": return UpShiftAPI.Objects.DeviceTokenResponse
     case "Mutation": return UpShiftAPI.Objects.Mutation
     case "Query": return UpShiftAPI.Objects.Query
     case "Shift": return UpShiftAPI.Objects.Shift

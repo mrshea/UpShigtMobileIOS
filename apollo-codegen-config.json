@@ -11,9 +11,7 @@
   "schemaDownloadConfiguration": {
       "downloadMethod": {
           "introspection": {
-              "endpointURL": "http://192.168.1.124:3000/api/graphql",
-
-
+              "endpointURL": "http://192.168.1.193:3000/api/graphql",
               "httpMethod": {
                   "POST": {}
               },
