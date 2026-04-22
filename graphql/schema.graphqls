@@ -104,6 +104,24 @@ type TimeOffRequest {
   employeeEmail: String
 }
 
+type DropShiftRequest {
+  id: ID!
+  clerkId: String!
+  orgId: String!
+  shiftId: String!
+  shift: Shift
+  employeeNotes: String
+  managerNotes: String
+  status: String!
+  submittedDate: DateTime!
+  reviewedDate: DateTime
+  approvedBy: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  employeeName: String
+  employeeEmail: String
+}
+
 type TimeEntry {
   id: ID!
   orgId: String!
@@ -155,6 +173,8 @@ type Query {
   myShifts: [ShiftClaim!]!
   timeOffRequests(isAdmin: Boolean!): [TimeOffRequest!]!
   myTimeOffRequests: [TimeOffRequest!]!
+  dropShiftRequests(isAdmin: Boolean!): [DropShiftRequest!]!
+  myDropShiftRequests: [DropShiftRequest!]!
   timeEntries(isAdmin: Boolean!, employeeId: String, startDate: DateTime, endDate: DateTime): [TimeEntry!]!
   myTimeEntries(startDate: DateTime, endDate: DateTime): [TimeEntry!]!
   clockStatus: ClockStatus!
@@ -169,6 +189,9 @@ type Mutation {
   createTimeOffRequest(startTime: DateTime!, endTime: DateTime!, employeeNotes: String): TimeOffRequest!
   updateTimeOffRequestStatus(requestId: ID!, status: String!, managerNotes: String): TimeOffRequest!
   deleteTimeOffRequest(id: ID!): Boolean!
+  createDropShiftRequest(shiftId: String!, employeeNotes: String): DropShiftRequest!
+  updateDropShiftRequestStatus(requestId: String!, status: String!, managerNotes: String): DropShiftRequest!
+  deleteDropShiftRequest(id: String!): Boolean!
   clockIn(shiftId: ID, latitude: Float, longitude: Float): TimeEntry!
   clockOut(latitude: Float, longitude: Float): TimeEntry!
   registerDeviceToken(token: String!, platform: Platform!): DeviceTokenResponse!

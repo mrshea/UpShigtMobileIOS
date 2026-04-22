@@ -1,0 +1,21 @@
+# Get my drop shift requests
+query GetMyDropShiftRequests {
+  myDropShiftRequests {
+    id
+    shiftId
+    status
+    employeeNotes
+    managerNotes
+    submittedDate
+    reviewedDate
+    shift {
+      id
+      date
+      startTime
+      endTime
+      department {
+        name
+      }
+    }
+  }
+}

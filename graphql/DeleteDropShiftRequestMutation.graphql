@@ -1,0 +1,4 @@
+# Cancel a pending drop shift request
+mutation DeleteDropShiftRequest($id: String!) {
+  deleteDropShiftRequest(id: $id)
+}

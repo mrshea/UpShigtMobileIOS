@@ -12,7 +12,6 @@ struct TimeAndEarnings: View {
   var clerk: Clerk
   @StateObject private var viewModel: TimeAndEarningsViewModel
   @Environment(\.calendar) var calendar
-  @State private var selectedWeekStart: Date = Date().startOfWeek
 
   init(clerk: Clerk) {
     self.clerk = clerk
@@ -36,11 +35,12 @@ struct TimeAndEarnings: View {
     .navigationTitle("")
     .navigationBarTitleDisplayMode(.inline)
     .task {
-      await loadWeekData()
+      await viewModel.loadPayPeriodConfig()
+      await loadPeriodData()
     }
-    .onChange(of: selectedWeekStart) { _, _ in
+    .onChange(of: viewModel.periodOffset) { _, _ in
       Task {
-        await loadWeekData()
+        await loadPeriodData()
       }
     }
   }
@@ -67,9 +67,13 @@ struct TimeAndEarnings: View {
     ScrollView {
       VStack(spacing: 16) {
         basePayCard
-        weekNavigationView
-        weekSummaryCard
-        shiftsListView
+        if viewModel.isConfigured {
+          periodNavigationView
+          weekSummaryCard
+          shiftsListView
+        } else {
+          notConfiguredView
+        }
       }
       .padding()
     }
@@ -115,11 +119,11 @@ struct TimeAndEarnings: View {
     )
   }
 
-  // MARK: - Week Navigation
+  // MARK: - Period Navigation
 
-  private var weekNavigationView: some View {
+  private var periodNavigationView: some View {
     HStack {
-      Button(action: previousWeek) {
+      Button(action: { viewModel.goToPreviousPeriod() }) {
         Image(systemName: "chevron.left")
           .font(.title3)
           .foregroundStyle(.blue)
@@ -128,11 +132,11 @@ struct TimeAndEarnings: View {
       Spacer()
 
       VStack(spacing: 2) {
-        Text(weekRangeText)
+        Text(viewModel.payPeriod?.label ?? "Loading…")
           .font(.headline)
 
-        if calendar.isDate(selectedWeekStart, equalTo: Date().startOfWeek, toGranularity: .day) {
-          Text("Current Week")
+        if viewModel.isCurrentPeriod {
+          Text("Current Pay Period")
             .font(.caption2)
             .foregroundStyle(.secondary)
         }
@@ -140,52 +144,35 @@ struct TimeAndEarnings: View {
 
       Spacer()
 
-      Button(action: nextWeek) {
+      Button(action: { viewModel.goToNextPeriod() }) {
         Image(systemName: "chevron.right")
           .font(.title3)
-          .foregroundStyle(isCurrentWeek ? .gray : .blue)
+          .foregroundStyle(viewModel.isCurrentPeriod ? .gray : .blue)
       }
-      .disabled(isCurrentWeek)
+      .disabled(viewModel.isCurrentPeriod)
     }
     .padding(.vertical, 8)
   }
 
-  private var weekRangeText: String {
-    let endDate = calendar.date(byAdding: .day, value: 6, to: selectedWeekStart) ?? selectedWeekStart
+  // MARK: - Not Configured State
 
-    let formatter = DateFormatter()
-    formatter.dateFormat = "MMM d"
-
-    let startString = formatter.string(from: selectedWeekStart)
-    let endString = formatter.string(from: endDate)
-
-    let startMonth = calendar.component(.month, from: selectedWeekStart)
-    let endMonth = calendar.component(.month, from: endDate)
-
-    if startMonth == endMonth {
-      formatter.dateFormat = "d"
-      let endDay = formatter.string(from: endDate)
-      return "\(startString) - \(endDay)"
-    } else {
-      return "\(startString) - \(endString)"
+  private var notConfiguredView: some View {
+    VStack(spacing: 12) {
+      Image(systemName: "calendar.badge.exclamationmark")
+        .font(.system(size: 44))
+        .foregroundStyle(.orange)
+      Text("Pay period not set up")
+        .font(.headline)
+      Text("Contact your admin to configure your organization's pay period.")
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
     }
-  }
-
-  private var isCurrentWeek: Bool {
-    calendar.isDate(selectedWeekStart, equalTo: Date().startOfWeek, toGranularity: .day)
-  }
-
-  private func previousWeek() {
-    if let newDate = calendar.date(byAdding: .weekOfYear, value: -1, to: selectedWeekStart) {
-      selectedWeekStart = newDate
-    }
-  }
-
-  private func nextWeek() {
-    guard !isCurrentWeek else { return }
-    if let newDate = calendar.date(byAdding: .weekOfYear, value: 1, to: selectedWeekStart) {
-      selectedWeekStart = newDate
-    }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 32)
+    .padding(.horizontal)
+    .background(Color(uiColor: .secondarySystemBackground))
+    .cornerRadius(12)
   }
 
   // MARK: - Week Summary Card
@@ -288,7 +275,7 @@ struct TimeAndEarnings: View {
         .multilineTextAlignment(.center)
 
       Button("Retry") {
-        Task { await loadWeekData() }
+        Task { await loadPeriodData() }
       }
       .buttonStyle(.bordered)
     }
@@ -321,7 +308,7 @@ struct TimeAndEarnings: View {
         .font(.system(size: 48))
         .foregroundStyle(.secondary)
 
-      Text("No shifts this week")
+      Text("No shifts this period")
         .font(.headline)
 
       Text("Completed shifts will appear here")
@@ -336,9 +323,9 @@ struct TimeAndEarnings: View {
 
   // MARK: - Helper Methods
 
-  private func loadWeekData() async {
-    let weekEnd = calendar.date(byAdding: .day, value: 6, to: selectedWeekStart) ?? selectedWeekStart
-    await viewModel.fetchWeekData(startDate: selectedWeekStart, endDate: weekEnd)
+  private func loadPeriodData() async {
+    guard let period = viewModel.payPeriod else { return }
+    await viewModel.fetchWeekData(startDate: period.start, endDate: period.end)
   }
 }
 

@@ -77,6 +77,13 @@ class TimeAndEarningsViewModel: ObservableObject {
   @Published var isLoading = false
   @Published var errorMessage: String?
 
+  // Pay period state
+  @Published var payPeriodConfig: PayPeriodConfig?
+  @Published var payPeriod: PayPeriod?
+  @Published var periodOffset: Int = 0
+  @Published var isConfigured: Bool = true
+  @Published var isLoadingConfig: Bool = false
+
   private let apolloClient = Network.shared.apollo
   private let clerk: Clerk
   private let defaultHourlyRate: Double = 15.0 // Fallback rate if not found in metadata
@@ -84,6 +91,53 @@ class TimeAndEarningsViewModel: ObservableObject {
   init(clerk: Clerk) {
     self.clerk = clerk
   }
+
+  // MARK: - Pay Period Config
+
+  func loadPayPeriodConfig() async {
+    isLoadingConfig = true
+    defer { isLoadingConfig = false }
+    do {
+      let response = try await APIClient.shared.get(
+        "/api/pay-period-config",
+        as: APIResponse<PayPeriodConfig>.self
+      )
+      if let config = response.data {
+        self.payPeriodConfig = config
+        self.isConfigured = true
+        recomputePeriod()
+      } else {
+        self.payPeriodConfig = nil
+        self.payPeriod = nil
+        self.isConfigured = false
+      }
+    } catch {
+      print("Failed to load pay period config: \(error)")
+      self.errorMessage = error.localizedDescription
+      self.isConfigured = false
+    }
+  }
+
+  func recomputePeriod() {
+    guard let config = payPeriodConfig else {
+      payPeriod = nil
+      return
+    }
+    payPeriod = PayPeriodCalculator.period(for: config, offset: periodOffset)
+  }
+
+  func goToPreviousPeriod() {
+    periodOffset -= 1
+    recomputePeriod()
+  }
+
+  func goToNextPeriod() {
+    guard periodOffset < 0 else { return }
+    periodOffset += 1
+    recomputePeriod()
+  }
+
+  var isCurrentPeriod: Bool { periodOffset == 0 }
 
   // Get hourly rate from Clerk user metadata (public so view can display it)
   var currentHourlyRate: Double {
@@ -170,10 +224,10 @@ class TimeAndEarningsViewModel: ObservableObject {
       }
 
       // Only include shifts that:
-      // 1. Are within the selected week range
+      // 1. Are within the selected period range (end is exclusive)
       // 2. Are in the past (completed)
       guard shiftDate >= startDate,
-            shiftDate <= endDate,
+            shiftDate < endDate,
             shiftDate < now else {
         return nil
       }

@@ -1,0 +1,17 @@
+# Create a drop shift request
+mutation CreateDropShiftRequest($shiftId: String!, $employeeNotes: String) {
+  createDropShiftRequest(shiftId: $shiftId, employeeNotes: $employeeNotes) {
+    id
+    status
+    submittedDate
+    shift {
+      id
+      date
+      startTime
+      endTime
+      department {
+        name
+      }
+    }
+  }
+}

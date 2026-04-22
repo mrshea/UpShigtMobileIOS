@@ -245,12 +245,6 @@ struct TimeOffView: View {
         .multilineTextAlignment(.center)
         .padding(.horizontal)
       
-      Button(action: { showNewRequestSheet = true }) {
-        Label("Request Time Off", systemImage: "plus.circle.fill")
-          .font(.headline)
-      }
-      .buttonStyle(.borderedProminent)
-      .controlSize(.large)
     }
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)

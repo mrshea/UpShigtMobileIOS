@@ -1,0 +1,10 @@
+# Admin: Approve or deny a drop shift request
+mutation UpdateDropShiftRequestStatus($requestId: String!, $status: String!, $managerNotes: String) {
+  updateDropShiftRequestStatus(requestId: $requestId, status: $status, managerNotes: $managerNotes) {
+    id
+    status
+    reviewedDate
+    approvedBy
+    managerNotes
+  }
+}

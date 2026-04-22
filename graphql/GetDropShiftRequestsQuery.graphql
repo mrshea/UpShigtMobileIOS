@@ -1,0 +1,26 @@
+# Admin: Get all drop shift requests
+query GetDropShiftRequests {
+  dropShiftRequests(isAdmin: true) {
+    id
+    clerkId
+    shiftId
+    status
+    employeeNotes
+    managerNotes
+    submittedDate
+    reviewedDate
+    approvedBy
+    employeeName
+    employeeEmail
+    shift {
+      id
+      date
+      startTime
+      endTime
+      department {
+        id
+        name
+      }
+    }
+  }
+}

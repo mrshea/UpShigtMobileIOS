@@ -343,22 +343,7 @@ class ShiftViewModel: ObservableObject {
     /// - Parameter shiftId: ID of the shift to unclaim
     /// - Throws: ShiftError if unclaim fails
     func unclaimShift(shiftId: String) async throws {
-        logger.info("Unclaiming shift \(shiftId)")
-
-        let mutation = UnclaimShiftMutation(shiftId: shiftId)
-
-        let result = try await apolloClient.perform(mutation: mutation)
-
-        if let error = result.errors?.first {
-            let errorMsg = error.message ?? "Unknown error"
-            logger.error("Unclaim shift mutation failed: \(errorMsg)")
-            throw ShiftError.mutationFailed(message: errorMsg)
-        }
-
-        logger.notice("Shift \(shiftId) unclaimed successfully")
-
-        // Instead of clearing entire cache, refetch affected queries
-        await refetchAfterMutation()
+        throw ShiftError.mutationFailed(message: "Direct drop is disabled. Use drop shift request.")
     }
 
     /// Refetches data after a mutation instead of clearing entire Apollo cache

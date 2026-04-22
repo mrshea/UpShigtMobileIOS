@@ -14,6 +14,9 @@ struct MySchedule: View {
   var clerk: Clerk
   @State private var selectedDate = Date()
   @StateObject private var viewModel = ShiftViewModel()
+  @StateObject private var dropShiftViewModel = DropShiftViewModel()
+  @State private var showDropRequestSheet: DropRequestSheetID?
+  @State private var dropRequestNotes: String = ""
   @Environment(\.calendar) var calendar
   
   // Calendar visible date range (current month - 1 to + 2 months)
@@ -76,6 +79,35 @@ struct MySchedule: View {
     }
     .task {
       await loadShifts()
+      await dropShiftViewModel.loadRequests()
+    }
+    .sheet(item: $showDropRequestSheet) { sheet in
+      VStack(spacing: 16) {
+        Text("Request to Drop Shift")
+          .font(.headline)
+        TextField("Reason (optional)", text: $dropRequestNotes)
+          .textFieldStyle(.roundedBorder)
+          .frame(minHeight: 44)
+        HStack {
+          Button("Cancel") {
+            showDropRequestSheet = nil
+            dropRequestNotes = ""
+          }
+          Spacer()
+          Button("Submit") {
+            let shiftId = sheet.shiftId
+            let notes = dropRequestNotes
+            Task {
+              await dropShiftViewModel.submitRequest(shiftId: shiftId, employeeNotes: notes.isEmpty ? nil : notes)
+              showDropRequestSheet = nil
+              dropRequestNotes = ""
+            }
+          }
+          .buttonStyle(.borderedProminent)
+        }
+      }
+      .padding()
+      .presentationDetents([.height(220)])
     }
   }
 
@@ -169,15 +201,28 @@ struct MySchedule: View {
                         .foregroundStyle(.secondary)
 
                     ForEach(myShiftsToday) { claim in
-                        MyShiftCard(claim: claim) {
-                            Task {
-                                do {
-                                    try await viewModel.unclaimShift(shiftId: claim.shiftId)
-                                } catch {
-                                    viewModel.errorMessage = error.localizedDescription
+                        // Only consider a pending drop request submitted after the current claim.
+                        // Historical approved/denied requests from previous claims are ignored,
+                        // so re-claiming a shift resets the button state.
+                        let dropRequest = dropShiftViewModel.requests.first {
+                            $0.shiftId == claim.shiftId
+                            && $0.status == .pending
+                            && $0.submittedAt >= claim.claimedAt
+                        }
+                        MyShiftCard(
+                            claim: claim,
+                            dropRequest: dropRequest,
+                            onRequestDrop: {
+                                showDropRequestSheet = DropRequestSheetID(shiftId: claim.shiftId)
+                            },
+                            onCancelDropRequest: {
+                                if let reqId = dropRequest?.id {
+                                    Task {
+                                        try? await dropShiftViewModel.deleteRequest(id: reqId)
+                                    }
                                 }
                             }
-                        }
+                        )
                     }
                 }
             }
@@ -232,8 +277,30 @@ struct MySchedule: View {
 
 struct MyShiftCard: View {
   let claim: MyShiftClaim
-  let onUnclaim: () -> Void
-  
+  let dropRequest: DropShiftRequest?
+  let onRequestDrop: () -> Void
+  let onCancelDropRequest: () -> Void
+
+  private var hasPendingDropRequest: Bool {
+    dropRequest?.status == .pending
+  }
+
+  private var buttonLabel: String {
+    hasPendingDropRequest ? "Pending Drop Request" : "Request to Drop"
+  }
+
+  private var buttonTint: Color {
+    hasPendingDropRequest ? .orange : .red
+  }
+
+  private func buttonTapped() {
+    if hasPendingDropRequest {
+      onCancelDropRequest()
+    } else {
+      onRequestDrop()
+    }
+  }
+
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       HStack {
@@ -241,12 +308,12 @@ struct MyShiftCard: View {
           HStack {
             Text(claim.shift.role)
               .font(.headline)
-            
+
             Image(systemName: "checkmark.circle.fill")
               .foregroundStyle(.green)
               .font(.subheadline)
           }
-          
+
           HStack(spacing: 4) {
             Image(systemName: "clock")
               .font(.caption)
@@ -255,19 +322,19 @@ struct MyShiftCard: View {
           }
           .foregroundStyle(.secondary)
         }
-        
+
         Spacer()
-        
-        Button(action: onUnclaim) {
-          Text("Cancel")
+
+        Button(action: buttonTapped) {
+          Text(buttonLabel)
             .font(.subheadline)
             .fontWeight(.semibold)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
-        .tint(.red)
+        .tint(buttonTint)
       }
-      
+
       HStack(spacing: 4) {
         Image(systemName: "calendar.badge.clock")
           .font(.caption2)
@@ -286,3 +353,7 @@ struct MyShiftCard: View {
   }
 }
 
+struct DropRequestSheetID: Identifiable {
+  let shiftId: String
+  var id: String { shiftId }
+}
