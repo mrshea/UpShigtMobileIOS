@@ -8,20 +8,25 @@
 import SwiftUI
 import Clerk
 
-struct HeaderView: View {
+struct HeaderView<Trailing: View>: View {
   let title: String
-  
+  let trailing: Trailing
+
+  init(title: String, @ViewBuilder trailing: () -> Trailing = { EmptyView() }) {
+    self.title = title
+    self.trailing = trailing()
+  }
+
   var body: some View {
     VStack(spacing: 12) {
-      HStack {
+      HStack(spacing: 12) {
         Text(title)
           .font(.largeTitle)
           .fontWeight(.bold)
 
         Spacer()
 
-        UserButton()
-          .frame(width: 36, height: 36)
+        trailing
       }
       .padding(.horizontal)
       .padding(.top)
@@ -29,7 +34,7 @@ struct HeaderView: View {
     .background(Color(uiColor: .systemBackground))
   }
 }
+
 #Preview {
   HeaderView(title: "My Schedule")
 }
-

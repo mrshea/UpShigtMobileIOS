@@ -107,12 +107,14 @@ struct NaivigatorView: View{
             }
             .tag(0)
           
-          // Shifts & Time Off Tab
-          ShiftsContainerView()
-            .tabItem {
-              Label("Shifts", systemImage: "calendar.badge.plus")
-            }
-            .tag(1)
+          // Open Shifts Tab
+          NavigationStack {
+            AvaliableShifts()
+          }
+          .tabItem {
+            Label("Open Shifts", systemImage: "calendar.badge.plus")
+          }
+          .tag(1)
 
           // Today Tab
           TodayView(clerk: clerk)

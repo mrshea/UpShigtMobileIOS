@@ -71,7 +71,17 @@ struct MySchedule: View {
 
   private var authenticatedView: some View {
     VStack(spacing: 0) {
-      HeaderView(title: "My Schedule")
+      HeaderView(title: "My Schedule") {
+        NavigationLink(destination: TimeOffView()) {
+          Image(systemName: "calendar.badge.clock")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(.blue)
+            .frame(width: 36, height: 36)
+            .background(Color.blue.opacity(0.1))
+            .clipShape(Circle())
+        }
+        .accessibilityLabel("Time Off")
+      }
       Divider()
       calendarView
       shiftsContentView
